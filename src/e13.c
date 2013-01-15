@@ -22,31 +22,27 @@ int fn_fn(struct Dent* dent, const char* buf, int start, int end) {
 }
 
 int prints_fn(struct Dent* dent, const char* buf, int start, int end) {
-	printf("%s\n", dent->value.p);
+	printf("%s ", dent->value.p);
 	return 1;
 }
 
-void hello(const char* buf, int start, int end) {
-	puts("hello");
+void eol(const char* buf, int start, int end) {
+	putchar('\n');
 }
 
 int number_fn(struct Dent* dent, const char* buf, int start, int end) {
+	int n = 0;
+
 	for (int i = start; i < end; ++i) {
 		char c = buf[i];
 		if (!isdigit(c)) {
-			putchar('[');
-			for (int i = start; i < end; ++i) {
-				putchar(buf[i]);
-			}
-			puts("] is not a number!\n");
 			return 0;
+		} else {
+			n *= 10;
+			n += (c-'0');
 		}
 	}
-	putchar('[');
-	for (int i = start; i < end; ++i) {
-		putchar(buf[i]);
-	}
-	puts("] is a number!\n");
+	printf("%d ", n);
 	return 1;
 }
 
@@ -85,7 +81,7 @@ void eval(const char* word, int start, int end) {
 	} while (walk != 0);
 
 	if (0 == walk) {
-		puts("NOT FOUND");
+		printf("NOTFOUND");
 	}
 }
 
@@ -125,14 +121,11 @@ void input(const char* buffer) {
 }
 
 int main(void) {
-	dadd_p("?", fn_fn, &hello);
-	dadd_p("p", prints_fn, "lala");
-
-	input("23 skidoo");
+	dadd_p(".", fn_fn, &eol);
+	input("23 skidoo .");
 
 	dadd_p("skidoo", prints_fn, "honey");
-
-	input("23 skidoo");
+	input("23 skidoo .");
 
 	return 0;
 }
