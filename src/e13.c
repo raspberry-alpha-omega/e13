@@ -2,130 +2,191 @@
 #include <string.h>
 #include <ctype.h>
 
-struct Dent;
+#define GETBYTE(i) (mem[i] & 0xFF)
 
-typedef void (*fn)(const char* buf, int start, int end);
-typedef int (*typefn)(struct Dent* dent, const char* buf, int start, int end); // return 1 if handled, 0 otherwise
-
-struct Dent {
-	const char* name;
-	typefn type;
-	union { void* p; int v; } value;
-	struct Dent* prev;
+int mem[65536] = {
+    0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0
+    // ...
 };
 
-void nop_fn(struct Dent* dent, const char* buf, int start, int end) {}
-
-int fn_fn(struct Dent* dent, const char* buf, int start, int end) {
-	((fn)dent->value.p)(buf, start,end);
-	return 1;
-}
-
-int prints_fn(struct Dent* dent, const char* buf, int start, int end) {
-	printf("%s ", dent->value.p);
-	return 1;
-}
-
-void eol(const char* buf, int start, int end) {
-	putchar('\n');
-}
-
-int number_fn(struct Dent* dent, const char* buf, int start, int end) {
-	int n = 0;
-
-	for (int i = start; i < end; ++i) {
-		char c = buf[i];
-		if (!isdigit(c)) {
-			return 0;
-		} else {
-			n *= 10;
-			n += (c-'0');
-		}
-	}
-	printf("%d ", n);
-	return 1;
-}
-
-struct Dent dict[1000] = {
-		{ 0, number_fn, 0, 0 }
+enum label {
+  HEAD,
+  INCOUNT,
+  INBUFFER,
+  DICT = INBUFFER + 30,
 };
-struct Dent* head = dict;
 
-void dadd_p(const char* name, typefn type, void* p) {
-	struct Dent* dent = head+1;
-	dent->name = name;
-	dent->type = type;
-	dent->value.p = p;
-	dent->prev = head;
-	++head;
-}
+#define COLS 4
+void dump(const char* s) {
+  puts(s);
+  for (int i = 0; i < (64/COLS); ++i) {
+    int row = i * COLS;
+    for (int j = 0; j < COLS; ++j) {
+      printf("%08x ", mem[row + j]);
+    }
+    printf("\n");
+  }
+  printf("HEAD=%d\n", mem[HEAD]);
+  printf("INCOUNT=%d\n", mem[INCOUNT]);
 
-int match(const char* defname, const char* buf, int start, int end) {
-	if (0 == defname || 0 == *defname) return 1; // NULL or empty is a wildcard which always matches
-	int len = end - start;
-
-	for (int i = 0; i < len; ++i) {
-		if (defname[i] == 0) return 0;
-		if (defname[i] != buf[start+i]) return 0;
-	}
-	return defname[len] == 0;
-}
-
-void eval(const char* word, int start, int end) {
-	struct Dent* walk = head;
-	do {
-		if (match(walk->name, word, start, end)) {
-			if (walk->type(walk, word, start, end)) break;
-		}
-		walk = walk->prev;
-	} while (walk != 0);
-
-	if (0 == walk) {
-		printf("NOTFOUND");
-	}
+  printf("INBUFFER[");
+  for (int i = 0; i < mem[INCOUNT]; ++i) {
+    printf("%c", GETBYTE(INBUFFER+i));
+  }
+  printf("]\nDICT:\n");
+  int end = (mem[HEAD] < 60) ? mem[HEAD]+4 : 64;
+  for (int i = DICT; i < end; i += 4) {
+    printf("  NAME=%08x TYPE=%08x DATA=%08x PREV=%8d\n", mem[i], mem[i+1], mem[i+2], mem[i+3]);
+  }
+  puts("");
 }
 
 #define OUTSIDE 0
 #define INSIDE 1
 
-void input(const char* buffer) {
-	int start = 0;
-	int end = 0;
-	int state = OUTSIDE;
-	int i = 0;
+typedef void (*fn)(int start, int end);
+typedef int (*typefn)(int dent, int start, int end); // return 1 if handled, 0 otherwise
 
-	while (buffer[i]) {
-		switch(state) {
-		case OUTSIDE:
-			if (' ' != buffer[i]) {
-				end = start = i;
-				state = INSIDE;
-			}
-			break;
-		case INSIDE:
-			if (' ' == buffer[i]) {
-				eval(buffer, start, i);
-				end = start = i;
-				state = OUTSIDE;
-			} else {
-				++end;
-			}
-			break;
-		}
-		++i;
-	}
+void nop_fn(int dent, int start, int end) {}
 
-	if (i > start) {
-		eval(buffer,start,i);
-	}
+int fn_fn(int dent, int start, int end) {
+  fn f = (fn)mem[dent+2];
+  f(start,end);
+  return 1;
+}
+
+int prints_fn(int dent, int start, int end) {
+  printf("%s ", mem[dent+2]);
+  return 1;
+}
+
+void eol(int start, int end) {
+  putchar('\n');
+}
+
+int number_fn(int dent, int start, int end) {
+  int n = 0;
+
+  for (int i = start; i < end; ++i) {
+    char c = GETBYTE(INBUFFER+i);
+    if (!isdigit(c)) {
+      return 0;
+    } else {
+      n *= 10;
+      n += (c-'0');
+    }
+  }
+  printf("%d ", n);
+  return 1;
+}
+
+int match(int defname, int start, int end) {
+  if (0 == defname) return 1; // NULL is a wildcard which always matches
+
+  int len = end - start;
+  const char* s = (const char*)defname;
+
+  for (int i = 0; i < len; ++i) {
+    if (s[i] == 0) return 0;
+    if (s[i] != GETBYTE(INBUFFER+start+i)) return 0;
+  }
+  return s[len] == 0;
+}
+
+void eval(int start, int end) {
+  int walk = mem[HEAD];
+  do {
+    if (match(mem[walk], start, end)) {
+      typefn f = (typefn)mem[walk+1];
+      if (f(walk, start, end)) return;
+    }
+    walk = mem[walk+3];
+  } while (walk != 0);
+
+  printf("NOTFOUND");
+}
+
+void input(void) {
+  int start = 0;
+  int end = 0;
+  int state = OUTSIDE;
+  int i = 0;
+  int count = mem[INCOUNT];
+
+  while (i < count) {
+    char c = GETBYTE(INBUFFER+i);
+    switch(state) {
+    case OUTSIDE:
+      if (' ' != c) {
+        end = start = i;
+        state = INSIDE;
+      }
+      break;
+    case INSIDE:
+      if (' ' == c) {
+        eval(start, i);
+        end = start = i;
+        state = OUTSIDE;
+      } else {
+        ++end;
+      }
+      break;
+    }
+    ++i;
+  }
+
+  if (i > start) {
+    eval(start,i);
+  }
+
+  mem[INCOUNT] = 0;
+}
+
+void init(void) {
+  int p = DICT;
+
+  mem[p++] = 0;
+  mem[p++] = (int)number_fn;
+  mem[p++] = 0;
+  mem[p++] = 0;
+  mem[HEAD] = DICT;
+
+  mem[p++] = (int)".";
+  mem[p++] = (int)fn_fn;
+  mem[p++] = (int)&eol;
+  mem[p++] = mem[HEAD];
+  mem[HEAD] += 4;
+}
+
+void dadd(const char* name, typefn type, int data) {
+  int dp = mem[HEAD] + 4;
+  mem[dp] = (int)name;
+  mem[dp+1] = (int)type;
+  mem[dp+2] = data;
+  mem[dp+3] = mem[HEAD];
+  mem[HEAD] += 4;
+}
+
+void type(const char* s) {
+  int i = 0;
+  while (*s) {
+    mem[INBUFFER + i++] = *s++;
+  }
+
+  mem[INCOUNT] = i;
 }
 
 int main(void) {
-	dadd_p(".", fn_fn, &eol);
-	input("23 skidoo .");
+  init();
 
-	dadd_p("skidoo", prints_fn, "honey");
-	input("23 skidoo .");
+	type("23 skidoo .");
+	input();
+
+	dadd("skidoo", prints_fn, (int)"honey");
+
+	type("23 skidoo .");
+	input();
 
 	return 0;
 }
