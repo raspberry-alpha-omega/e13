@@ -1,46 +1,12 @@
-#include <stdio.h>
-#include <string.h>
-#include <ctype.h>
+#include "e13.h"
+#include "io.h"
 
-#define GETBYTE(i) (mem[i] & 0xFF)
-
+// the memory model, simulating basic RAM so that I can get as close to Chuck's original design as possible.
 int mem[65536] = {
     0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
     0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0
     // ...
 };
-
-enum label {
-  HEAD,
-  INCOUNT,
-  INBUFFER,
-  DICT = INBUFFER + 30,
-};
-
-#define COLS 4
-void dump(const char* s) {
-  puts(s);
-  for (int i = 0; i < (64/COLS); ++i) {
-    int row = i * COLS;
-    for (int j = 0; j < COLS; ++j) {
-      printf("%08x ", mem[row + j]);
-    }
-    printf("\n");
-  }
-  printf("HEAD=%d\n", mem[HEAD]);
-  printf("INCOUNT=%d\n", mem[INCOUNT]);
-
-  printf("INBUFFER[");
-  for (int i = 0; i < mem[INCOUNT]; ++i) {
-    printf("%c", GETBYTE(INBUFFER+i));
-  }
-  printf("]\nDICT:\n");
-  int end = (mem[HEAD] < 60) ? mem[HEAD]+4 : 64;
-  for (int i = DICT; i < end; i += 4) {
-    printf("  NAME=%08x TYPE=%08x DATA=%08x PREV=%8d\n", mem[i], mem[i+1], mem[i+2], mem[i+3]);
-  }
-  puts("");
-}
 
 #define OUTSIDE 0
 #define INSIDE 1
@@ -57,12 +23,12 @@ int fn_fn(int dent, int start, int end) {
 }
 
 int prints_fn(int dent, int start, int end) {
-  printf("%s ", mem[dent+2]);
+  console_write_string((const char*)mem[dent+2]);
   return 1;
 }
 
 void eol(int start, int end) {
-  putchar('\n');
+  console_write_char('\n');
 }
 
 int number_fn(int dent, int start, int end) {
@@ -70,14 +36,15 @@ int number_fn(int dent, int start, int end) {
 
   for (int i = start; i < end; ++i) {
     char c = GETBYTE(INBUFFER+i);
-    if (!isdigit(c)) {
+    if (c < '0' || c > '9') {
       return 0;
     } else {
       n *= 10;
       n += (c-'0');
     }
   }
-  printf("%d ", n);
+  console_write_number(n);
+  console_write_char(' ');
   return 1;
 }
 
@@ -104,7 +71,7 @@ void eval(int start, int end) {
     walk = mem[walk+3];
   } while (walk != 0);
 
-  printf("NOTFOUND");
+  console_write_string("NOTFOUND");
 }
 
 void input(void) {
