@@ -5,8 +5,8 @@
 
 struct Dent;
 
-typedef void (*fn)(void);
-typedef void (*typefn)(struct Dent* dent);
+typedef void (*fn)(const char* word);
+typedef int (*typefn)(struct Dent* dent, const char* word); // return 1 if handled, 0 otherwise
 
 struct Dent {
 	const char* name;
@@ -15,22 +15,29 @@ struct Dent {
 	struct Dent* prev;
 };
 
-void nop_fn(struct Dent* dent) {}
+void nop_fn(struct Dent* dent, const char* word) {}
 
-void fn_fn(struct Dent* dent) {
-	((fn)dent->value.p)();
+int fn_fn(struct Dent* dent, const char* word) {
+	((fn)dent->value.p)(word);
+	return 1;
 }
 
-void prints_fn(struct Dent* dent) {
+int prints_fn(struct Dent* dent, const char* word) {
 	printf("%s\n", dent->value.p);
+	return 1;
 }
 
-void hello(void) {
+void hello(const char* word) {
 	puts("hello");
 }
 
+int number_fn(struct Dent* dent, const char* word) {
+	printf("is [%s] a number?\n", word);
+	return 0;
+}
+
 struct Dent dict[1000] = {
-		{ "", nop_fn, 0, 0 }
+		{ 0, number_fn, 0, 0 }
 };
 struct Dent* head = dict;
 
@@ -43,12 +50,13 @@ void dadd_p(const char* name, typefn type, void* p) {
 	++head;
 }
 
-
 void eval(const char* word) {
 	struct Dent* walk = head;
 	do {
-		if (strcmp(word, walk->name) == 0) {
-			walk->type(walk);
+		if (0 == walk->name) {
+			if (walk->type(walk, word)) break;
+		} else if (strcmp(word, walk->name) == 0) {
+			walk->type(walk, word);
 			break;
 		}
 		walk = walk->prev;
