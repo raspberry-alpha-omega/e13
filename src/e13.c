@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <ctype.h>
 
 struct Dent;
 
@@ -32,8 +33,15 @@ void hello(const char* word) {
 }
 
 int number_fn(struct Dent* dent, const char* word) {
-	printf("is [%s] a number?\n", word);
-	return 0;
+	const char* p = word;
+	while (*p != 0) {
+		if (!isdigit(*p++)) {
+			printf("[%s] is not a number!\n", word);
+			return 0;
+		}
+	}
+	printf("[%s] is a number!\n", word);
+	return 1;
 }
 
 struct Dent dict[1000] = {
@@ -74,5 +82,6 @@ int main(void) {
 	eval("?");
 	eval("p");
 	eval("q");
+	eval("123");
 	return 0;
 }
