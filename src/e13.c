@@ -58,14 +58,21 @@ void dadd_p(const char* name, typefn type, void* p) {
 	++head;
 }
 
+int match(const char* defname, const char* buf, int start, int end) {
+	if (0 == defname || 0 == *defname) return 1; // NULL or empty is a wildcard which always matches
+
+	for (int i = 0; i < (end - start); ++i) {
+		if (*defname == 0) return 0;
+		if (*defname != buf[start+i]) return 0;
+	}
+	return (*defname != 0);
+}
+
 void eval(const char* word) {
 	struct Dent* walk = head;
 	do {
-		if (0 == walk->name) {
+		if (match(walk->name, word, 0, strlen(word))) {
 			if (walk->type(walk, word)) break;
-		} else if (strcmp(word, walk->name) == 0) {
-			walk->type(walk, word);
-			break;
 		}
 		walk = walk->prev;
 	} while (walk != 0);
@@ -73,6 +80,12 @@ void eval(const char* word) {
 	if (0 == walk) {
 		puts("NOT FOUND");
 	}
+}
+
+void input(const char* buffer) {
+	int start = 0;
+	int end = 0;
+	int i = 0;
 }
 
 int main(void) {
