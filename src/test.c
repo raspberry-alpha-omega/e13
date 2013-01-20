@@ -98,14 +98,7 @@ static void bytes_read_write() {
   fail_unless(word_read(POOL_NEXT) == 0xaabbccdd, "word_read should read the stored value");
 }
 
-static void byte_lookup() {
-  bytes[INRING_START] = 'x';
-  fail_unless(blookup(INRING_START,0) == 0, "bytes lookup of empty string should return 0");
-  fail_unless(blookup(INRING_START,1) == 0xFFFFFFFF, "bytes lookup of undefined string should return FFFFFFFF");
-}
-
 static void byte_add() {
-  byte_lookup();
   fail_unless(POOL_NEXT > POOL_HEAD, "pool next should be beyond pool head");
 
   address old_head = POOL_HEAD;
@@ -115,7 +108,44 @@ static void byte_add() {
   fail_unless(added == POOL_HEAD, "badd should return new address");
   fail_unless(1 == word_read(POOL_HEAD+PENT_LEN), "supplied length should be stored with text");
   fail_unless(POOL_NEXT == POOL_HEAD + 4 + 4, "pool next should be rounded up to the start of the next word block");
-  fail_unless(blookup(INRING_START,1) == POOL_HEAD, "bytes lookup of fresh string should return its address");
+}
+
+static void byte_lookup_not_found() {
+  bytes[INRING_START] = 'x';
+  bytes[INRING_START+1] = 'y';
+  fail_unless(blookup(INRING_START,0) == 0, "bytes lookup of empty string should return 0");
+  fail_unless(blookup(INRING_START,1) == 0xFFFFFFFF, "bytes lookup of undefined string should return FFFFFFFF");
+}
+
+static void byte_lookup_found_when_added() {
+  bytes[INRING_START] = 'x';
+  fail_unless(blookup(INRING_START,1) == 0xFFFFFFFF, "bytes lookup of undefined string should return FFFFFFFF");
+  address added = badd(INRING_START, 1);
+  fail_unless(blookup(INRING_START,1) == added, "bytes lookup of defined string should return its address");
+}
+
+static void byte_lookup_found_by_length() {
+  bytes[INRING_START] = 'x';
+  bytes[INRING_START+1] = 'y';
+  fail_unless(blookup(INRING_START,1) == 0xFFFFFFFF, "bytes lookup of undefined string should return FFFFFFFF");
+
+  address added1 = badd(INRING_START, 2);
+  fail_unless(blookup(INRING_START,1) == 0xFFFFFFFF, "bytes lookup of partial string should return FFFFFFFF");
+
+  address added2 = badd(INRING_START, 1);
+  fail_unless(blookup(INRING_START,1) == added2, "bytes lookup of defined string should return its address");
+}
+
+static void byte_lookup_found_by_content() {
+  bytes[INRING_START] = 'x';
+  bytes[INRING_START+1] = 'y';
+  fail_unless(blookup(INRING_START,1) == 0xFFFFFFFF, "bytes lookup of undefined string should return FFFFFFFF");
+
+  address added1 = badd(INRING_START, 1);
+  fail_unless(blookup(INRING_START+1,1) == 0xFFFFFFFF, "bytes lookup of partial string should return FFFFFFFF");
+
+  address added2 = badd(INRING_START+1, 1);
+  fail_unless(blookup(INRING_START+1,1) == added2, "bytes lookup of defined string should return its address");
 }
 
 int reset() {
@@ -165,8 +195,11 @@ int main() {
   test(dict_move_to_next);
   test(dict_lookup);
   test(bytes_read_write);
-  test(byte_lookup);
   test(byte_add);
+  test(byte_lookup_not_found);
+  test(byte_lookup_found_when_added);
+  test(byte_lookup_found_by_length);
+  test(byte_lookup_found_by_content);
 
   if (fails) {
     printf("%d tests failed\n", fails);

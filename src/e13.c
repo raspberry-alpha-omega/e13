@@ -70,17 +70,25 @@ address blookup(address start, int length) {
   address p = POOL_START;
   while (p < POOL_NEXT) {
     word len = word_read(p);
+    address data = p + PENT_DATA;
     if (len == length) {
-      // TODO
-      return p;
+      int i;
+      for (i = 0; i < length; ++i) {
+        byte requested = byte_read(start+i);
+        byte found = byte_read(data+i);
+        if (requested != found) break;
+      }
+      if (i == length) {
+        return p;
+      }
     }
 
-    p += 4; // step past length word
+    p += PENT_DATA; // step past length word
     p += len; // and the characters in the string
 
     // round len up to next word if required
     word mod = len % 4;
-    if (mod >= 0) {
+    if (mod > 0) {
       p += 4 - mod;
     }
   }
@@ -91,13 +99,17 @@ address blookup(address start, int length) {
 address badd(address start, int len) {
   address old_next = POOL_NEXT;
   word_write(POOL_NEXT, len);
-  POOL_NEXT += 4;
+  POOL_NEXT += PENT_DATA;
   POOL_NEXT += len;
   word mod = len % 4;
   if (mod >= 0) {
     POOL_NEXT += 4 - mod;
   }
   POOL_HEAD = old_next;
+
+  for (int i = 0; i < len; ++i) {
+    byte_write(POOL_HEAD+PENT_DATA + i, byte_read(start + i));
+  }
   return POOL_HEAD;
 }
 
