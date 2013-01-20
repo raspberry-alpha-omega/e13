@@ -35,6 +35,17 @@ void dadd(void) {
   dict[DICT_NEXT+DENT_PREV] = old_next;
 }
 
+address dlookup(address symbol) {
+  address head = DICT_HEAD;
+  while (head != 0) {
+    if (dict[head+DENT_NAME] == symbol) {
+      return head;
+    }
+    head = dict[head+DENT_PREV];
+  }
+  return 0xFFFFFFFF;
+}
+
 void byte_write(address p, byte v) {
   bytes[p] = v;
 }
@@ -48,11 +59,6 @@ address blookup(address start, int length) {
 }
 
 address badd(address start, int length) {
-  // TODO
-  return 0;
-}
-
-address dlookup(address symbol) {
   // TODO
   return 0;
 }

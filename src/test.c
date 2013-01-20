@@ -44,12 +44,6 @@ static void dict_read_write() {
   fail_unless(dict_read(DICT_NEXT+DENT_NAME) == 123, "dict[next] name should change when written");
 }
 
-static void bytes_read_write() {
-  fail_unless(byte_read(POOL_NEXT) == 0, "pool next should be 0 at start");
-  byte_write(POOL_NEXT, 123);
-  fail_unless(byte_read(POOL_NEXT) == 123, "pool next should contain the updated value");
-}
-
 static void dict_move_to_next() {
   dict_read_write();
   dict_write(DICT_NEXT+DENT_TYPE, 456);
@@ -73,6 +67,28 @@ static void dict_move_to_next() {
   fail_unless(dict_read(DICT_NEXT+DENT_TYPE) == 0, "new dict[next] type fn should be 0");
   fail_unless(dict_read(DICT_NEXT+DENT_PARAM) == 0, "new dict[next] param should be 0");
   fail_unless(dict_read(DICT_NEXT+DENT_PREV) == DICT_HEAD, "new dict[next] prev should point back to new head");
+}
+
+static void bytes_read_write() {
+  fail_unless(byte_read(POOL_NEXT) == 0, "pool next should be 0 at start");
+  byte_write(POOL_NEXT, 123);
+  fail_unless(byte_read(POOL_NEXT) == 123, "pool next should contain the updated value");
+}
+
+static void dict_lookup() {
+  fail_unless(dlookup(123) == 0xFFFFFFFF, "dict lookup should not find undefined item");
+  dict_write(DICT_NEXT+DENT_NAME, 123);
+  dadd();
+  fail_unless(dlookup(123) == DICT_HEAD, "dict lookup should find item at head");
+
+  address first_match = DICT_HEAD;
+  dict_write(DICT_NEXT+DENT_NAME, 456);
+  dadd();
+  fail_unless(dlookup(123) == first_match, "dict lookup should find item behind head");
+
+  dict_write(DICT_NEXT+DENT_NAME, 123);
+  dadd();
+  fail_unless(dlookup(123) != first_match, "dict lookup should find override");
 }
 
 int reset() {
@@ -120,6 +136,7 @@ int main() {
   test(return_stack);
   test(dict_read_write);
   test(dict_move_to_next);
+  test(dict_lookup);
   test(bytes_read_write);
 
   if (fails) {
