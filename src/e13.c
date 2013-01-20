@@ -66,6 +66,14 @@ void word_write(address p, word v) {
   byte_write(p+3, (v & 0xFF000000) >> 24);
 }
 
+word roundup(word p) {
+  word mod = p % 4;
+  if (mod > 0) {
+    p += 4 - mod;
+  }
+  return p;
+}
+
 address blookup(address start, int length) {
   address p = POOL_START;
   while (p < POOL_NEXT) {
@@ -84,13 +92,7 @@ address blookup(address start, int length) {
     }
 
     p += PENT_DATA; // step past length word
-    p += len; // and the characters in the string
-
-    // round len up to next word if required
-    word mod = len % 4;
-    if (mod > 0) {
-      p += 4 - mod;
-    }
+    p += roundup(len); // and the characters in the string
   }
 
   return 0xFFFFFFFF;
@@ -100,11 +102,7 @@ address badd(address start, int len) {
   address old_next = POOL_NEXT;
   word_write(POOL_NEXT, len);
   POOL_NEXT += PENT_DATA;
-  POOL_NEXT += len;
-  word mod = len % 4;
-  if (mod >= 0) {
-    POOL_NEXT += 4 - mod;
-  }
+  POOL_NEXT += roundup(len);
   POOL_HEAD = old_next;
 
   for (int i = 0; i < len; ++i) {
