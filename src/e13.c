@@ -1,21 +1,91 @@
-#include <stdio.h>
+#include <stdio.h> // debugging only, remove for final version
 
-#include "e13.h"
+#include <stdint.h>
 #include "io.h"
+#include "e13.h"
 
 // the memory model, simulating basic RAM so that I can get as close to Chuck's original design as possible.
-int mem[65536] = {
-    0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0
-    // ...
-};
+word dstack[DSTACK_WORDS];
+word rstack[RSTACK_WORDS];
+word dict[DICT_WORDS];
+byte bytes[INRING_BYTES + POOL_BYTES];
 
-#define OUTSIDE 0
-#define INSIDE 1
+// system variables, really these belong in memory, perhaps before DSTACK
+address DS_TOP;
+address RS_TOP;
+address RING_IN;
+address RING_OUT;
+address DICT_HEAD;
+address DICT_NEXT;
+address POOL_HEAD;
+address POOL_NEXT;
+word INPUT_COUNT;
 
-typedef void (*fn)(int start, int end);
-typedef int (*typefn)(int dent, int buf, int start, int end); // return 1 if handled, 0 otherwise
+// memory access functions
+void push(word v) {
+  dstack[DS_TOP++] = v;
+}
+word pop(void) {
+  return dstack[--DS_TOP];
+}
+void rpush(address p) {
+  rstack[RS_TOP++] = p;
+}
+address rpop(void) {
+  return rstack[--RS_TOP];
+}
+void dict_write(address p, word v) {
+  // TODO
+}
+uint32_t dict_read(address p) {
+  // TODO
+  return 0;
+}
 
+void byte_write(address p, byte v) {
+  // TODO
+}
+uint8_t byte_read(address p) {
+  // TODO
+  return 0;
+}
+
+address blookup(address start, int length) {
+  // TODO
+  return 0;
+}
+
+address badd(address start, int length) {
+  // TODO
+  return 0;
+}
+
+address dlookup(address symbol) {
+  // TODO
+  return 0;
+}
+
+void dadd(void) {
+  // TODO
+}
+
+void execute(address p) {
+  // TODO
+}
+
+void eval(address p, int length) {
+  // TODO
+}
+
+void init(void) {
+
+}
+
+void run(void) {
+  // TODO
+}
+
+#if 0
 int match(int defname, int start, int end) {
   if (0 == defname) return 1; // NULL is a wildcard which always matches
 
@@ -155,21 +225,4 @@ void type(const char* s) {
 
   mem[INCOUNT] = i;
 }
-
-int main(void) {
-  init();
-
-	type("23 skidoo .");
-	input();
-
-  dadd("xx", exec_fn, (int)"23 skidoo .");
-  type("13 xx");
-  input();
-
-	dadd("skidoo", prints_fn, (int)"honey");
-
-	type("23 skidoo .");
-	input();
-
-	return 0;
-}
+#endif

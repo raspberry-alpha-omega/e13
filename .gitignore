@@ -1,2 +1,5 @@
 e13.exe.stackdump
 obj/*.o
+e13.exe
+test.exe
+test.exe.stackdump
