@@ -24,12 +24,22 @@ uint32_t dict_read(address p) {
   return dict[p];
 }
 
+void dadd(void) {
+  address old_next = DICT_NEXT;
+  DICT_HEAD = old_next;
+
+  DICT_NEXT += 4;
+  dict[DICT_NEXT+DENT_NAME] = 0;
+  dict[DICT_NEXT+DENT_TYPE] = 0;
+  dict[DICT_NEXT+DENT_PARAM] = 0;
+  dict[DICT_NEXT+DENT_PREV] = old_next;
+}
+
 void byte_write(address p, byte v) {
-  // TODO
+  bytes[p] = v;
 }
 uint8_t byte_read(address p) {
-  // TODO
-  return 0;
+  return bytes[p];
 }
 
 address blookup(address start, int length) {
@@ -45,17 +55,6 @@ address badd(address start, int length) {
 address dlookup(address symbol) {
   // TODO
   return 0;
-}
-
-void dadd(void) {
-  address old_next = DICT_NEXT;
-  DICT_HEAD = old_next;
-
-  DICT_NEXT += 4;
-  dict[DICT_NEXT+DENT_NAME] = 0;
-  dict[DICT_NEXT+DENT_TYPE] = 0;
-  dict[DICT_NEXT+DENT_PARAM] = 0;
-  dict[DICT_NEXT+DENT_PREV] = old_next;
 }
 
 void execute(address p) {
