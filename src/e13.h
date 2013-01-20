@@ -30,9 +30,8 @@
 #define DENT_PARAM 2
 #define DENT_PREV 3
 
-#define PENT_ID 0
-#define PENT_LEN 4
-#define PENT_DATA 8
+#define PENT_LEN 0
+#define PENT_DATA 4
 
 // synbolic constants
 #define OUTSIDE 0
@@ -64,10 +63,14 @@ void push(word v);
 word pop();
 void rpush(address v);
 address rpop();
-void dict_write(address p, word v);
 word dict_read(address p);
-void byte_write(address p, byte v);
+void dict_write(address p, word v);
+
 byte byte_read(address p);
+void byte_write(address p, byte v);
+
+word word_read(address p);
+void word_write(address p, word v);
 
 typedef int (*typefn)(address dent, address start, int len); // return 1 if handled, 0 otherwise
 

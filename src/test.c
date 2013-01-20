@@ -69,12 +69,6 @@ static void dict_move_to_next() {
   fail_unless(dict_read(DICT_NEXT+DENT_PREV) == DICT_HEAD, "new dict[next] prev should point back to new head");
 }
 
-static void bytes_read_write() {
-  fail_unless(byte_read(POOL_NEXT) == 0, "pool next should be 0 at start");
-  byte_write(POOL_NEXT, 123);
-  fail_unless(byte_read(POOL_NEXT) == 123, "pool next should contain the updated value");
-}
-
 static void dict_lookup() {
   fail_unless(dlookup(123) == 0xFFFFFFFF, "dict lookup should not find undefined item");
   dict_write(DICT_NEXT+DENT_NAME, 123);
@@ -91,6 +85,39 @@ static void dict_lookup() {
   fail_unless(dlookup(123) != first_match, "dict lookup should find override");
 }
 
+static void bytes_read_write() {
+  fail_unless(byte_read(POOL_NEXT) == 0, "pool next should be 0 at start");
+  byte_write(POOL_NEXT, 123);
+  fail_unless(byte_read(POOL_NEXT) == 123, "pool next should contain the updated value");
+
+  word_write(POOL_NEXT, 0xaabbccdd);
+  fail_unless(byte_read(POOL_NEXT+0) == 0xdd, "pool bytes should contain stored word (byte 0)");
+  fail_unless(byte_read(POOL_NEXT+1) == 0xcc, "pool bytes should contain stored word (byte 1)");
+  fail_unless(byte_read(POOL_NEXT+2) == 0xbb, "pool bytes should contain stored word (byte 2)");
+  fail_unless(byte_read(POOL_NEXT+3) == 0xaa, "pool bytes should contain stored word (byte 3)");
+  fail_unless(word_read(POOL_NEXT) == 0xaabbccdd, "word_read should read the stored value");
+}
+
+static void byte_lookup() {
+  bytes[INRING_START] = 'x';
+  fail_unless(blookup(INRING_START,0) == 0, "bytes lookup of empty string should return 0");
+  fail_unless(blookup(INRING_START,1) == 0xFFFFFFFF, "bytes lookup of undefined string should return FFFFFFFF");
+}
+
+static void byte_add() {
+  byte_lookup();
+  fail_unless(POOL_NEXT > POOL_HEAD, "pool next should be beyond pool head");
+
+  address old_head = POOL_HEAD;
+  address old_next = POOL_NEXT;
+  address added = badd(INRING_START, 1);
+  fail_unless(POOL_HEAD == old_next, "pool head should me moved to old next");
+  fail_unless(added == POOL_HEAD, "badd should return new address");
+  fail_unless(1 == word_read(POOL_HEAD+PENT_LEN), "supplied length should be stored with text");
+  fail_unless(POOL_NEXT == POOL_HEAD + 4 + 4, "pool next should be rounded up to the start of the next word block");
+  fail_unless(blookup(INRING_START,1) == POOL_HEAD, "bytes lookup of fresh string should return its address");
+}
+
 int reset() {
   int i;
 
@@ -105,8 +132,8 @@ int reset() {
     dict[i] = 0;
   }
 
-  word reset_bytes[12] = {
-      0,0,0,0,  0,0,0,1,  ' ',0,0,0
+  word reset_bytes[8] = {
+      0,0,0,0,  0,0,0,0
   };
   for (i = 0; i < 12; ++i) {
     bytes[i] = reset_bytes[i];
@@ -120,7 +147,7 @@ int reset() {
   DICT_HEAD = DICT_START;
   DICT_NEXT = DICT_START+4;
   POOL_HEAD = POOL_START;
-  POOL_NEXT = POOL_START+12;
+  POOL_NEXT = POOL_START+8;
   RING_IN = INRING_START;
   RING_OUT = INRING_START;
   INPUT_COUNT = 0;
@@ -138,6 +165,8 @@ int main() {
   test(dict_move_to_next);
   test(dict_lookup);
   test(bytes_read_write);
+  test(byte_lookup);
+  test(byte_add);
 
   if (fails) {
     printf("%d tests failed\n", fails);

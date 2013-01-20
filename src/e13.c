@@ -17,11 +17,11 @@ void rpush(address p) {
 address rpop(void) {
   return rstack[--RS_TOP];
 }
-void dict_write(address p, word v) {
-  dict[p] = v;
-}
 uint32_t dict_read(address p) {
   return dict[p];
+}
+void dict_write(address p, word v) {
+  dict[p] = v;
 }
 
 void dadd(void) {
@@ -46,21 +46,59 @@ address dlookup(address symbol) {
   return 0xFFFFFFFF;
 }
 
-void byte_write(address p, byte v) {
-  bytes[p] = v;
-}
 uint8_t byte_read(address p) {
   return bytes[p];
 }
-
-address blookup(address start, int length) {
-  // TODO
-  return 0;
+void byte_write(address p, byte v) {
+  bytes[p] = v;
+}
+word word_read(address p) {
+  word ret = byte_read(p);
+  ret += ((word)byte_read(p+1))<<8;
+  ret += ((word)byte_read(p+2))<<16;
+  ret += ((word)byte_read(p+3))<<24;
+  return ret;
+}
+void word_write(address p, word v) {
+  byte_write(p, v & 0x000000FF);
+  byte_write(p+1, (v & 0x0000FF00) >> 8);
+  byte_write(p+2, (v & 0x00FF0000) >> 16);
+  byte_write(p+3, (v & 0xFF000000) >> 24);
 }
 
-address badd(address start, int length) {
-  // TODO
-  return 0;
+address blookup(address start, int length) {
+  address p = POOL_START;
+  while (p < POOL_NEXT) {
+    word len = word_read(p);
+    if (len == length) {
+      // TODO
+      return p;
+    }
+
+    p += 4; // step past length word
+    p += len; // and the characters in the string
+
+    // round len up to next word if required
+    word mod = len % 4;
+    if (mod >= 0) {
+      p += 4 - mod;
+    }
+  }
+
+  return 0xFFFFFFFF;
+}
+
+address badd(address start, int len) {
+  address old_next = POOL_NEXT;
+  word_write(POOL_NEXT, len);
+  POOL_NEXT += 4;
+  POOL_NEXT += len;
+  word mod = len % 4;
+  if (mod >= 0) {
+    POOL_NEXT += 4 - mod;
+  }
+  POOL_HEAD = old_next;
+  return POOL_HEAD;
 }
 
 void execute(address p) {
@@ -94,7 +132,7 @@ address RS_TOP = RSTACK_START;
 address DICT_HEAD = DICT_START;
 address DICT_NEXT = DICT_START+4;
 address POOL_HEAD = POOL_START;
-address POOL_NEXT = POOL_START+12;
+address POOL_NEXT = POOL_START+4;
 address RING_IN = INRING_START;
 address RING_OUT = INRING_START;
 word INPUT_COUNT = 0;
@@ -107,7 +145,7 @@ word dict[DICT_WORDS] = {
     0, 0, 0, DICT_START
 };
 byte bytes[POOL_BYTES + INRING_BYTES] = {
-    0,0,0,0,  0,0,0,1,  ' ',0,0,0
+    0,0,0,0,
 };
 
 void run(void) {
