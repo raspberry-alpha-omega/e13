@@ -19,10 +19,20 @@
 #define RSTACK_END RSTACK_WORDS
 #define DICT_START 0
 #define DICT_END DICT_WORDS
-#define INRING_START 0
-#define INRING_END INRING_BYTES
-#define POOL_START INRING_END
-#define POOL_END (INRING_BYTES + BPOOL_BYTES)
+#define POOL_START 0
+#define POOL_END (POOL_START + POOL_BYTES)
+#define INRING_START POOL_END
+#define INRING_END (INRING_START + RING_BYTES)
+
+// field offsets
+#define DENT_NAME 0
+#define DENT_TYPE 1
+#define DENT_PARAM 2
+#define DENT_PREV 3
+
+#define PENT_ID 0
+#define PENT_LEN 4
+#define PENT_DATA 8
 
 // synbolic constants
 #define OUTSIDE 0
@@ -41,12 +51,12 @@ extern byte bytes[];
 // system variables, really these belong in memory, perhaps before DSTACK
 extern address DS_TOP;
 extern address RS_TOP;
-extern address RING_IN;
-extern address RING_OUT;
 extern address DICT_HEAD;
 extern address DICT_NEXT;
 extern address POOL_HEAD;
 extern address POOL_NEXT;
+extern address RING_IN;
+extern address RING_OUT;
 extern word INPUT_COUNT;
 
 // memory access functions
@@ -59,7 +69,7 @@ word dict_read(address p);
 void byte_write(address p, byte v);
 byte byte_read(address p);
 
-typedef int (*typefn)(int dent, int buf, int start, int end); // return 1 if handled, 0 otherwise
+typedef int (*typefn)(address dent, address start, int len); // return 1 if handled, 0 otherwise
 
 // data manipulation functions
 
@@ -86,5 +96,8 @@ void init(void);
 
 // run accepting and processing input
 void run(void);
+
+// attempt to parse and push a number from a string
+int number_fn(address dent, address start, int len);
 
 #endif

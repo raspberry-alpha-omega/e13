@@ -1,6 +1,6 @@
 CFLAGS=-std=c99
 
-test: e13 obj/test.o
+test: obj/test.o obj/e13.o obj/io.o obj/debug.o
 	gcc -o test obj/test.o obj/e13.o obj/io.o obj/debug.o
 	
 e13: obj/e13.o obj/io.o obj/debug.o obj/main.o

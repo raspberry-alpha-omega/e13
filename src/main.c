@@ -6,7 +6,6 @@
 
 
 int main(void) {
-  init();
   run();
 
 //  type("23 skidoo .");

@@ -4,23 +4,6 @@
 #include "io.h"
 #include "e13.h"
 
-// the memory model, simulating basic RAM so that I can get as close to Chuck's original design as possible.
-word dstack[DSTACK_WORDS];
-word rstack[RSTACK_WORDS];
-word dict[DICT_WORDS];
-byte bytes[INRING_BYTES + POOL_BYTES];
-
-// system variables, really these belong in memory, perhaps before DSTACK
-address DS_TOP;
-address RS_TOP;
-address RING_IN;
-address RING_OUT;
-address DICT_HEAD;
-address DICT_NEXT;
-address POOL_HEAD;
-address POOL_NEXT;
-word INPUT_COUNT;
-
 // memory access functions
 void push(word v) {
   dstack[DS_TOP++] = v;
@@ -35,11 +18,10 @@ address rpop(void) {
   return rstack[--RS_TOP];
 }
 void dict_write(address p, word v) {
-  // TODO
+  dict[p] = v;
 }
 uint32_t dict_read(address p) {
-  // TODO
-  return 0;
+  return dict[p];
 }
 
 void byte_write(address p, byte v) {
@@ -66,7 +48,14 @@ address dlookup(address symbol) {
 }
 
 void dadd(void) {
-  // TODO
+  address old_next = DICT_NEXT;
+  DICT_HEAD = old_next;
+
+  DICT_NEXT += 4;
+  dict[DICT_NEXT+DENT_NAME] = 0;
+  dict[DICT_NEXT+DENT_TYPE] = 0;
+  dict[DICT_NEXT+DENT_PARAM] = 0;
+  dict[DICT_NEXT+DENT_PREV] = old_next;
 }
 
 void execute(address p) {
@@ -77,9 +66,44 @@ void eval(address p, int length) {
   // TODO
 }
 
-void init(void) {
+int number_fn(address dent, address start, int len) {
+  int n = 0;
 
+  for (int i = 0; i < len; ++i) {
+    byte c = byte_read(start+i);
+    if (c < '0' || c > '9') {
+      return 0;
+    } else {
+      n *= 10;
+      n += (c-'0');
+    }
+  }
+  push(n);
+  return 1;
 }
+
+
+// system variables, really these belong in target memory, perhaps before DSTACK
+address DS_TOP = DSTACK_START;
+address RS_TOP = RSTACK_START;
+address DICT_HEAD = DICT_START;
+address DICT_NEXT = DICT_START+4;
+address POOL_HEAD = POOL_START;
+address POOL_NEXT = POOL_START+12;
+address RING_IN = INRING_START;
+address RING_OUT = INRING_START;
+word INPUT_COUNT = 0;
+
+// the memory model, simulating basic RAM so that I can get as close to Chuck's original design as possible.
+word dstack[DSTACK_WORDS];
+word rstack[RSTACK_WORDS];
+word dict[DICT_WORDS] = {
+    0, (word)&number_fn, 0, 0,
+    0, 0, 0, DICT_START
+};
+byte bytes[POOL_BYTES + INRING_BYTES] = {
+    0,0,0,0,  0,0,0,1,  ' ',0,0,0
+};
 
 void run(void) {
   // TODO
