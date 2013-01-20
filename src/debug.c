@@ -22,7 +22,7 @@ void dump(const char* s) {
   printf("]\nDICT:\n");
   int end = (mem[HEAD] < 60) ? mem[HEAD]+4 : 64;
   for (int i = DICT; i < end; i += 4) {
-    printf("  NAME=%08x TYPE=%08x DATA=%08x PREV=%8d\n", mem[i], mem[i+1], mem[i+2], mem[i+3]);
+    printf("  %4x NAME=%08x(%s) TYPE=%08x DATA=%08x PREV=%4x\n", i, mem[i], (void*)mem[i], mem[i+1], mem[i+2], mem[i+3]);
   }
   puts("");
 }
