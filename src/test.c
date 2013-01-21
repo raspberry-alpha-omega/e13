@@ -162,20 +162,37 @@ static void positive_number() {
   bytes[INRING_START+1] = '2';
   bytes[INRING_START+2] = '3';
   bytes[INRING_START+3] = 'p';
-  fail_unless(1 == number(INRING_START, 1), "'x' should not be a number");
-  fail_unless(DS_TOP != DSTACK_START, "non-number string should push");
+  fail_unless(1 == number(INRING_START, 1), "'1' should be a number");
+  fail_unless(DS_TOP != DSTACK_START, "number string should push");
   fail_unless(1 == pop(), "number should be pushed");
 
-  fail_unless(1 == number(INRING_START, 2), "'x' should not be a number");
-  fail_unless(DS_TOP != DSTACK_START, "non-number string should push");
+  fail_unless(1 == number(INRING_START, 2), "'12' should be a number");
+  fail_unless(DS_TOP != DSTACK_START, "number string should push");
   fail_unless(12 == pop(), "number should be pushed");
 
-  fail_unless(1 == number(INRING_START, 3), "'x' should not be a number");
-  fail_unless(DS_TOP != DSTACK_START, "non-number string should push");
+  fail_unless(1 == number(INRING_START, 3), "'123' should be a number");
+  fail_unless(DS_TOP != DSTACK_START, "number string should push");
   fail_unless(123 == pop(), "number should be pushed");
 
-  fail_unless(0 == number(INRING_START, 4), "'x' should not be a number");
+  fail_unless(0 == number(INRING_START, 4), "'123p' should not be a number");
   fail_unless(DS_TOP == DSTACK_START, "non-number string should not push");
+}
+
+static void negative_number() {
+  bytes[INRING_START] = '-';
+  bytes[INRING_START+1] = '2';
+  bytes[INRING_START+2] = '3';
+
+  fail_unless(0 == number(INRING_START, 1), "'-' should not be a number");
+  fail_unless(DS_TOP == DSTACK_START, "non-number string should not push");
+
+  fail_unless(1 == number(INRING_START, 2), "'-2' should be a number");
+  fail_unless(DS_TOP != DSTACK_START, "number string should push");
+  fail_unless(-2 == pop(), "number should be pushed");
+
+  fail_unless(1 == number(INRING_START, 3), "'-23' should be a number");
+  fail_unless(DS_TOP != DSTACK_START, "number string should push");
+  fail_unless(-23 == pop(), "number should be pushed");
 }
 
 int reset() {
@@ -232,6 +249,7 @@ int main() {
   test(byte_lookup_found_by_content);
   test(not_a_number);
   test(positive_number);
+  test(negative_number);
 
   if (fails) {
     printf("%d tests failed\n", fails);

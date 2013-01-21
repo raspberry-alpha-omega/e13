@@ -119,7 +119,7 @@ void eval(address p, int length) {
   // TODO
 }
 
-int number(address start, int len) {
+int natural(int negative, address start, int len) {
   if (0 == len) return 0;
   int n = 0;
 
@@ -132,8 +132,22 @@ int number(address start, int len) {
       n += (c-'0');
     }
   }
-  push(n);
+
+  push(negative ? -n : n);
   return 1;
+}
+
+int number(address start, int len) {
+  if (0 == len) return 0;
+  int negative = 0;
+
+  if ('-' == byte_read(start)) {
+    negative = 1;
+    ++start;
+    --len;
+  }
+
+  return natural(negative, start, len);
 }
 
 
