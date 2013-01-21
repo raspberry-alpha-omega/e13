@@ -72,7 +72,7 @@ void byte_write(address p, byte v);
 word word_read(address p);
 void word_write(address p, word v);
 
-typedef int (*typefn)(address dent, address start, int len); // return 1 if handled, 0 otherwise
+typedef int (*typefn)(address dent); // return 1 if handled, 0 otherwise
 
 // data manipulation functions
 
@@ -101,6 +101,6 @@ void init(void);
 void run(void);
 
 // attempt to parse and push a number from a string
-int number_fn(address dent, address start, int len);
+int number(address start, int len);
 
 #endif

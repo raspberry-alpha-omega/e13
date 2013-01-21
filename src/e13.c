@@ -119,7 +119,8 @@ void eval(address p, int length) {
   // TODO
 }
 
-int number_fn(address dent, address start, int len) {
+int number(address start, int len) {
+  if (0 == len) return 0;
   int n = 0;
 
   for (int i = 0; i < len; ++i) {
@@ -151,7 +152,7 @@ word INPUT_COUNT = 0;
 word dstack[DSTACK_WORDS];
 word rstack[RSTACK_WORDS];
 word dict[DICT_WORDS] = {
-    0, (word)&number_fn, 0, 0,
+    0, (word)&number, 0, 0,
     0, 0, 0, DICT_START
 };
 byte bytes[POOL_BYTES + INRING_BYTES] = {

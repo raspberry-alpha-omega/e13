@@ -148,11 +148,41 @@ static void byte_lookup_found_by_content() {
   fail_unless(blookup(INRING_START+1,1) == added2, "bytes lookup of defined string should return its address");
 }
 
+static void not_a_number() {
+  bytes[INRING_START] = 'x';
+  fail_unless(0 == number(INRING_START, 0), "empty string should not be a number");
+  fail_unless(DS_TOP == DSTACK_START, "empty string should not push");
+
+  fail_unless(0 == number(INRING_START, 1), "'x' should not be a number");
+  fail_unless(DS_TOP == DSTACK_START, "non-number string should not push");
+}
+
+static void positive_number() {
+  bytes[INRING_START] = '1';
+  bytes[INRING_START+1] = '2';
+  bytes[INRING_START+2] = '3';
+  bytes[INRING_START+3] = 'p';
+  fail_unless(1 == number(INRING_START, 1), "'x' should not be a number");
+  fail_unless(DS_TOP != DSTACK_START, "non-number string should push");
+  fail_unless(1 == pop(), "number should be pushed");
+
+  fail_unless(1 == number(INRING_START, 2), "'x' should not be a number");
+  fail_unless(DS_TOP != DSTACK_START, "non-number string should push");
+  fail_unless(12 == pop(), "number should be pushed");
+
+  fail_unless(1 == number(INRING_START, 3), "'x' should not be a number");
+  fail_unless(DS_TOP != DSTACK_START, "non-number string should push");
+  fail_unless(123 == pop(), "number should be pushed");
+
+  fail_unless(0 == number(INRING_START, 4), "'x' should not be a number");
+  fail_unless(DS_TOP == DSTACK_START, "non-number string should not push");
+}
+
 int reset() {
   int i;
 
   word reset_dict[8] = {
-      0, (word)&number_fn, 0, 0,
+      0, (word)&number, 0, 0,
       0, 0, 0, DICT_START
   };
   for (i = 0; i < 8; ++i) {
@@ -200,6 +230,8 @@ int main() {
   test(byte_lookup_found_when_added);
   test(byte_lookup_found_by_length);
   test(byte_lookup_found_by_content);
+  test(not_a_number);
+  test(positive_number);
 
   if (fails) {
     printf("%d tests failed\n", fails);
