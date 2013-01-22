@@ -111,14 +111,6 @@ address badd(address start, int len) {
   return POOL_HEAD;
 }
 
-void execute(address p) {
-  // TODO
-}
-
-void eval(address p, int length) {
-  // TODO
-}
-
 int natural(int negative, address start, int len) {
   if (0 == len) return 0;
   int n = 0;
@@ -150,6 +142,66 @@ int number(address start, int len) {
   return natural(negative, start, len);
 }
 
+void execute(typefn fn, word param) {
+  if (0 == fn) return;
+  fn(param);
+}
+
+char buf[1024];
+const char* dump_string(address p, int length) {
+  int i;
+  for (i = 0; i < length; ++i)
+    buf[i] = byte_read(p+i);
+  buf[i] = 0;
+  return buf;
+}
+
+void eval_word(address p, int length) {
+  address dent = 0xFFFFFFFF;
+  address name = blookup(p, length);
+  if (name != 0xFFFFFFFF) {
+    dent = dlookup(name);
+  }
+  if (dent != 0xFFFFFFFF) {
+    execute((typefn)dict_read(dent+DENT_TYPE), dict_read(dent+DENT_PARAM));
+  } else {
+    number(p, length);
+  }
+}
+
+void evaluate(address p, int length) {
+  int start = 0;
+  int end = 0;
+  int state = OUTSIDE;
+  int i = 0;
+
+  while (i < length) {
+    char c = byte_read(p+i);
+    if (0 == c) break;
+    switch(state) {
+    case OUTSIDE:
+      if (' ' != c) {
+        end = start = i;
+        state = INSIDE;
+      }
+      break;
+    case INSIDE:
+      if (' ' == c) {
+        eval_word(p+start, i-start);
+        end = start = i;
+        state = OUTSIDE;
+      } else {
+        ++end;
+      }
+      break;
+    }
+    ++i;
+  }
+
+  if (i > start) {
+    eval_word(p+start,i-start);
+  }
+}
 
 // system variables, really these belong in target memory, perhaps before DSTACK
 address DS_TOP = DSTACK_START;

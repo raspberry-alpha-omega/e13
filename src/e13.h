@@ -72,7 +72,7 @@ void byte_write(address p, byte v);
 word word_read(address p);
 void word_write(address p, word v);
 
-typedef int (*typefn)(address dent); // return 1 if handled, 0 otherwise
+typedef void (*typefn)(word param);
 
 // data manipulation functions
 
@@ -89,10 +89,10 @@ address dlookup(address symbol);
 void dadd(void);
 
 // execute a dictionary entry
-void execute(address);
+void execute(typefn fn, word value);
 
 // evaluate a sequence of words, either from the inring, or from the pool
-void eval(address p, int length);
+void evaluate(address p, int length);
 
 // initialise the system variables and initial dict entries
 void init(void);

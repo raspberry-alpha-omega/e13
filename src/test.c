@@ -8,6 +8,14 @@ static int fails = 0;
 #define fail_unless(expr, message) fail_if(!(expr), message)
 #define fail(message) fail_if(0, message)
 
+void dump_stack() {
+  printf("stack[ ");
+  for (int i = DSTACK_START; i < DS_TOP; ++i) {
+    printf("%d ", dstack[i]);
+  }
+  printf("]\n");
+}
+
 int _fail_if(const char* fn, int line, int expr, const char* message) {
   if (expr) {
     printf("%s:%d %s\n", fn, line, message);
@@ -195,6 +203,49 @@ static void negative_number() {
   fail_unless(-23 == pop(), "number should be pushed");
 }
 
+static void exec_null() {
+  fail_unless(DS_TOP == DSTACK_START, "stack should be empty at start");
+  execute(0, 23);
+  fail_unless(DS_TOP == DSTACK_START, "stack should be empty at end, too");
+}
+
+static void exec_push() {
+  fail_unless(DS_TOP == DSTACK_START, "stack should be empty at start");
+  execute(&push, 23);
+  fail_unless(DS_TOP > DSTACK_START, "stack should not be empty at end");
+  fail_unless(23 == pop(), "parameter value should have been pushed");
+}
+
+static void eval_empty() {
+  fail_unless(DS_TOP == DSTACK_START, "stack should be empty at start");
+  evaluate(INRING_START,0);
+  fail_unless(DS_TOP == DSTACK_START, "stack should be empty at end, too");
+}
+
+static void eval_number() {
+  fail_unless(DS_TOP == DSTACK_START, "stack should be empty at start");
+  byte_write(INRING_START, '2');
+  byte_write(INRING_START+1, '3');
+  evaluate(INRING_START,2);
+  fail_unless(DS_TOP > DSTACK_START, "stack should not be empty at end");
+  fail_unless(23 == pop(), "parameter value should have been pushed");
+  fail_unless(DS_TOP == DSTACK_START, "stack should be empty at end, too");
+}
+
+static void eval_two_numbers() {
+  fail_unless(DS_TOP == DSTACK_START, "stack should be empty at start");
+  byte_write(INRING_START, '2');
+  byte_write(INRING_START+1, '3');
+  byte_write(INRING_START+2, ' ');
+  byte_write(INRING_START+3, '9');
+  byte_write(INRING_START+4, '7');
+  evaluate(INRING_START,5);
+  fail_unless(DS_TOP > DSTACK_START, "stack should not be empty at end");
+  fail_unless(97 == pop(), "parameter value 97 should have been pushed");
+  fail_unless(23 == pop(), "parameter value 23 should have been pushed");
+  fail_unless(DS_TOP == DSTACK_START, "stack should be empty at end, too");
+}
+
 int reset() {
   int i;
 
@@ -233,7 +284,6 @@ int reset() {
 }
 
 #define test(fn) if (reset()) fn()
-//#define test(fn) fn()
 
 int main() {
   test(data_stack);
@@ -250,6 +300,11 @@ int main() {
   test(not_a_number);
   test(positive_number);
   test(negative_number);
+  test(exec_push);
+  test(exec_null);
+  test(eval_empty);
+  test(eval_number);
+  test(eval_two_numbers);
 
   if (fails) {
     printf("%d tests failed\n", fails);
