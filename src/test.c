@@ -256,7 +256,6 @@ static void eval_two_numbers() {
 }
 
 void dup(word param) {
-printf("dup..");
   word x = pop();
   push(x);
   push(x);
@@ -270,6 +269,7 @@ static void eval_word() {
   fail_unless(96 == pop(), "parameter value 96 should have been pushed once");
   fail_unless(DS_TOP == DSTACK_START, "stack should be empty at end, too");
 
+  type("hello");
   word name = badd(INRING_START, RING_IN-INRING_START);
   dict_write(DICT_NEXT+DENT_NAME, name);
   dict_write(DICT_NEXT+DENT_TYPE, (word)&dup);
