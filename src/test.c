@@ -8,12 +8,28 @@ static int fails = 0;
 #define fail_unless(expr, message) fail_if(!(expr), message)
 #define fail(message) fail_if(0, message)
 
-void dump_stack() {
+void dump_stack(void) {
   printf("stack[ ");
   for (int i = DSTACK_START; i < DS_TOP; ++i) {
     printf("%d ", dstack[i]);
   }
   printf("]\n");
+}
+
+void type(const char* s) {
+  RING_IN = INRING_START;
+  for (int i = 0; s[i] != 0; ++i) {
+    byte_write(RING_IN++, s[i]);
+  }
+}
+
+void evaluate_inring(void) {
+  evaluate(INRING_START, RING_IN);
+}
+
+void enter(const char* s) {
+  type(s);
+  evaluate_inring();
 }
 
 int _fail_if(const char* fn, int line, int expr, const char* message) {
@@ -224,9 +240,7 @@ static void eval_empty() {
 
 static void eval_number() {
   fail_unless(DS_TOP == DSTACK_START, "stack should be empty at start");
-  byte_write(INRING_START, '2');
-  byte_write(INRING_START+1, '3');
-  evaluate(INRING_START,2);
+  enter("23");
   fail_unless(DS_TOP > DSTACK_START, "stack should not be empty at end");
   fail_unless(23 == pop(), "parameter value should have been pushed");
   fail_unless(DS_TOP == DSTACK_START, "stack should be empty at end, too");
@@ -234,15 +248,16 @@ static void eval_number() {
 
 static void eval_two_numbers() {
   fail_unless(DS_TOP == DSTACK_START, "stack should be empty at start");
-  byte_write(INRING_START, '2');
-  byte_write(INRING_START+1, '3');
-  byte_write(INRING_START+2, ' ');
-  byte_write(INRING_START+3, '9');
-  byte_write(INRING_START+4, '7');
-  evaluate(INRING_START,5);
+  enter("23 97");
   fail_unless(DS_TOP > DSTACK_START, "stack should not be empty at end");
   fail_unless(97 == pop(), "parameter value 97 should have been pushed");
   fail_unless(23 == pop(), "parameter value 23 should have been pushed");
+  fail_unless(DS_TOP == DSTACK_START, "stack should be empty at end, too");
+}
+
+static void eval_word() {
+  fail_unless(DS_TOP == DSTACK_START, "stack should be empty at start");
+  enter("hello");
   fail_unless(DS_TOP == DSTACK_START, "stack should be empty at end, too");
 }
 
@@ -305,6 +320,7 @@ int main() {
   test(eval_empty);
   test(eval_number);
   test(eval_two_numbers);
+  test(eval_word);
 
   if (fails) {
     printf("%d tests failed\n", fails);
