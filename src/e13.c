@@ -74,8 +74,16 @@ word roundup(word p) {
   return p;
 }
 
-address blookup(address start, int length) {
+int buflen(address buf) {
+  int ret = 0;
+  while (byte_read(buf+ret) != 0)
+    ++ret;
+  return ret;
+}
+
+address blookup(address start) {
   address p = POOL_START;
+  int length = buflen(start);
   while (p < POOL_NEXT) {
     word len = word_read(p);
     address data = p + PENT_DATA;
@@ -98,25 +106,30 @@ address blookup(address start, int length) {
   return 0xFFFFFFFF;
 }
 
-address badd(address start, int len) {
+address badd(address start) {
   address old_next = POOL_NEXT;
-  word_write(POOL_NEXT, len);
-  POOL_NEXT += PENT_DATA;
-  POOL_NEXT += roundup(len);
-  POOL_HEAD = old_next;
-
-  for (int i = 0; i < len; ++i) {
-    byte_write(POOL_HEAD+PENT_DATA + i, byte_read(start + i));
+  int len = 0;
+  for (int i = 0 ;; ++i) {
+    uint8_t c = byte_read(start + i);
+    if (0 == c) break;
+    byte_write(POOL_NEXT+PENT_DATA + i, c);
+    ++len;
   }
+  word_write(POOL_NEXT, len);
+  POOL_NEXT += PENT_DATA + roundup(len);
+  POOL_HEAD = old_next;
   return POOL_HEAD;
 }
 
-int natural(int negative, address start, int len) {
-  if (0 == len) return 0;
+int natural(int negative, address start) {
   int n = 0;
 
-  for (int i = 0; i < len; ++i) {
+  for (int i = 0 ;; ++i) {
     byte c = byte_read(start+i);
+    if (0 == c || ' ' == c) {
+      if (0 == i) return 0;
+      break;
+    }
     if (c < '0' || c > '9') {
       return 0;
     } else {
@@ -129,17 +142,15 @@ int natural(int negative, address start, int len) {
   return 1;
 }
 
-int number(address start, int len) {
-  if (0 == len) return 0;
+int number(address start) {
   int negative = 0;
 
   if ('-' == byte_read(start)) {
     negative = 1;
     ++start;
-    --len;
   }
 
-  return natural(negative, start, len);
+  return natural(negative, start);
 }
 
 void execute(typefn fn, word param) {
@@ -156,26 +167,26 @@ const char* dump_string(address p, int length) {
   return buf;
 }
 
-void eval_word(address p, int length) {
-  address dent = 0xFFFFFFFF;
-  address name = blookup(p, length);
-  if (name != 0xFFFFFFFF) {
+void eval_word(address p) {
+  address dent = NOT_FOUND;
+  address name = blookup(p);
+  if (name != NOT_FOUND) {
     dent = dlookup(name);
   }
-  if (dent != 0xFFFFFFFF) {
+  if (dent != NOT_FOUND) {
     execute((typefn)dict_read(dent+DENT_TYPE), dict_read(dent+DENT_PARAM));
   } else {
-    number(p, length);
+    number(p);
   }
 }
 
-void evaluate(address p, int length) {
+void evaluate(address p) {
   int start = 0;
   int end = 0;
   int state = OUTSIDE;
   int i = 0;
 
-  while (i < length) {
+  for(;;) {
     char c = byte_read(p+i);
     if (0 == c) break;
     switch(state) {
@@ -187,7 +198,7 @@ void evaluate(address p, int length) {
       break;
     case INSIDE:
       if (' ' == c) {
-        eval_word(p+start, i-start);
+        eval_word(p+start);
         end = start = i;
         state = OUTSIDE;
       } else {
@@ -199,7 +210,7 @@ void evaluate(address p, int length) {
   }
 
   if (i > start) {
-    eval_word(p+start,i-start);
+    eval_word(p+start);
   }
 }
 

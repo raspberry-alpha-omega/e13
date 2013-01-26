@@ -36,6 +36,7 @@
 // synbolic constants
 #define OUTSIDE 0
 #define INSIDE 1
+#define NOT_FOUND 0xFFFFFFFF
 
 typedef uint32_t address;
 typedef uint32_t word;
@@ -77,10 +78,10 @@ typedef void (*typefn)(word param);
 // data manipulation functions
 
 // lookup a string in the pool and return its address or FFFFFFFF if not found
-address blookup(address start, int length);
+address blookup(address start);
 
 // lookup a string in the pool and return its address or add it if not found
-address badd(address start, int length);
+address badd(address start);
 
 // lookup a symbol in the dictionary and return its address or FFFFFFFF if not found
 address dlookup(address symbol);
@@ -92,7 +93,7 @@ void dadd(void);
 void execute(typefn fn, word value);
 
 // evaluate a sequence of words, either from the inring, or from the pool
-void evaluate(address p, int length);
+void evaluate(address p);
 
 // initialise the system variables and initial dict entries
 void init(void);
@@ -101,6 +102,6 @@ void init(void);
 void run(void);
 
 // attempt to parse and push a number from a string
-int number(address start, int len);
+int number(address start);
 
 #endif
