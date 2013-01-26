@@ -74,6 +74,7 @@ word word_read(address p);
 void word_write(address p, word v);
 
 typedef void (*typefn)(word param);
+typedef void (*primfn)(void);
 
 // data manipulation functions
 
