@@ -268,23 +268,6 @@ static void negative_number() {
   END
 }
 
-static void exec_null() {
-  START
-  fail_unless(DS_TOP == DSTACK_START, "stack should be empty at start");
-  execute(0, 23);
-  fail_unless(DS_TOP == DSTACK_START, "stack should be empty at end, too");
-  END
-}
-
-static void exec_push() {
-  START
-  fail_unless(DS_TOP == DSTACK_START, "stack should be empty at start");
-  execute(&push, 23);
-  fail_unless(DS_TOP > DSTACK_START, "stack should not be empty at end");
-  fail_unless(23 == pop(), "parameter value should have been pushed");
-  END
-}
-
 static void eval_empty() {
   START
   fail_unless(DS_TOP == DSTACK_START, "stack should be empty at start");
@@ -345,11 +328,6 @@ static void eval_word() {
   END
 }
 
-void eval(word param) {
-  // TODO
-  printf("sub p=%d\n", param);
-}
-
 void define(const char* names, const char* bodys) {
   type(names);
   word name = badd(INRING_START);
@@ -357,8 +335,8 @@ void define(const char* names, const char* bodys) {
   word body = badd(INRING_START);
 
   dict_write(DICT_NEXT+DENT_NAME, name);
-  dict_write(DICT_NEXT+DENT_TYPE, (word)&eval);
-  dict_write(DICT_NEXT+DENT_PARAM, body);
+  dict_write(DICT_NEXT+DENT_TYPE, (word)&evaluate);
+  dict_write(DICT_NEXT+DENT_PARAM, body+PENT_DATA);
   dadd();
 }
 
@@ -437,8 +415,6 @@ int main() {
   test(not_a_number);
   test(positive_number);
   test(negative_number);
-  test(exec_push);
-  test(exec_null);
   test(eval_empty);
   test(eval_number);
   test(eval_two_numbers);

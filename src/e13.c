@@ -154,6 +154,7 @@ int number(address start) {
 }
 
 void execute(typefn fn, word param) {
+printf("%s:param=%d\n", __FUNCTION__);
   if (0 == fn) return;
   fn(param);
 }
@@ -174,7 +175,9 @@ void eval_word(address p) {
     dent = dlookup(name);
   }
   if (dent != NOT_FOUND) {
-    execute((typefn)dict_read(dent+DENT_TYPE), dict_read(dent+DENT_PARAM));
+    typefn fn = (typefn)dict_read(dent+DENT_TYPE);
+    word param = dict_read(dent+DENT_PARAM);
+    fn(param);
   } else {
     number(p);
   }
