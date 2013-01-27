@@ -3,31 +3,6 @@
 #include <stdint.h>
 #include "e13.h"
 
-// memory access functions
-void push(word v) {
-  dstack[DS_TOP++] = v;
-}
-word pop(void) {
-  return dstack[--DS_TOP];
-}
-void rpush(address p) {
-  rstack[RS_TOP++] = p;
-}
-address rpop(void) {
-  return rstack[--RS_TOP];
-}
-
-address dlookup(address symbol) {
-  address head = DICT_HEAD;
-  while (head != 0) {
-    if (dict[head+DENT_NAME] == symbol) {
-      return head;
-    }
-    head = dict[head+DENT_PREV];
-  }
-  return 0xFFFFFFFF;
-}
-
 uint8_t byte_read(address p) {
   return bytes[p];
 }
@@ -39,9 +14,11 @@ word word_read(address p) {
   ret += ((word)byte_read(p+1))<<8;
   ret += ((word)byte_read(p+2))<<16;
   ret += ((word)byte_read(p+3))<<24;
+//printf("word_read(p=%d)=>%d\n", p, ret);
   return ret;
 }
 void word_write(address p, word v) {
+//printf("word_write(p=%d,v=%d)\n", p, v);
   byte_write(p, v & 0x000000FF);
   byte_write(p+1, (v & 0x0000FF00) >> 8);
   byte_write(p+2, (v & 0x00FF0000) >> 16);
@@ -52,6 +29,33 @@ uint32_t dict_read(address p) {
 }
 void dict_write(address p, word v) {
   dict[p] = v;
+}
+
+// memory access functions
+void push(word v) {
+  word_write(DS_TOP, v);
+  DS_TOP += WORDSIZE;
+}
+word pop(void) {
+  DS_TOP -= WORDSIZE;
+  return word_read(DS_TOP);
+}
+void rpush(address p) {
+  rstack[RS_TOP++] = p;
+}
+address rpop(void) {
+  return rstack[--RS_TOP];
+}
+
+address dlookup(address symbol) {
+  address head = DICT_HEAD;
+  while (head != 0) {
+    if (dict_read(head+DENT_NAME) == symbol) {
+      return head;
+    }
+    head = dict_read(head+DENT_PREV);
+  }
+  return 0xFFFFFFFF;
 }
 
 word roundup(word p) {
@@ -72,8 +76,10 @@ int buflen(address buf) {
 address blookup(address start) {
   address p = POOL_START;
   int length = buflen(start);
+//printf("%s:looking for [%s]\n", __FUNCTION__, bytes+start);
   while (p < POOL_NEXT) {
     word len = word_read(p);
+//printf(" %s:p=%d, len=%d\n", __FUNCTION__, p, len);
     address data = p + PENT_DATA;
     if (len == length) {
       int i;
@@ -83,9 +89,11 @@ address blookup(address start) {
         if (requested != found) break;
       }
       if (i == length) {
+//printf("%s:match for for [%s], returning\n", __FUNCTION__, bytes+start);
         return p;
       }
     }
+//printf("%s:no match for for [%s], skipping\n", __FUNCTION__, bytes+start);
 
     p += PENT_DATA; // step past length word
     p += roundup(len); // and the characters in the string
@@ -101,9 +109,11 @@ void primitive(address p) {
 void eval_word(address p) {
   address dent = NOT_FOUND;
   address name = blookup(p);
+//printf("%s:looking up address %d(%s), found name %d\n", __FUNCTION__, p, bytes+p, name);
   if (name != NOT_FOUND) {
     dent = dlookup(name);
   }
+//printf("%s:looking up address %d(%s), found dent %d\n", __FUNCTION__, p, bytes+p, dent);
   if (dent != NOT_FOUND) {
     typefn fn = (typefn)dict_read(dent+DENT_TYPE);
     word param = dict_read(dent+DENT_PARAM);
@@ -148,42 +158,66 @@ void evaluate(address p) {
 }
 
 // system variables, really these belong in target memory, perhaps before DSTACK or after the byte pool
-address DS_TOP = DSTACK_START;
-address RS_TOP = RSTACK_START;
-address DICT_HEAD = DICT_START;
-address DICT_NEXT = DICT_START+DENT_SIZE;
-address POOL_HEAD = POOL_START;
-address POOL_NEXT = POOL_START+PENT_DATA;
 address INBUF_IN = INBUF_START;
 address INBUF_OUT = INBUF_START;
 word INPUT_COUNT = 0;
 
+address DS_TOP = DSTACK_START;
+
+address RS_TOP = RSTACK_START;
+
+address DICT_HEAD = DICT_START;
+address DICT_NEXT = DICT_START+DENT_SIZE;
+
+address POOL_HEAD = POOL_START;
+address POOL_NEXT = POOL_START+PENT_DATA;
+
 // the memory model, simulating basic RAM so that I can get as close to Chuck's original design as possible.
-word dstack[DSTACK_WORDS];
 word rstack[RSTACK_WORDS];
-word dict[DICT_WORDS] = {
-    0, (word)&number, 0, 0,
-    0, 0, 0, DICT_START
-};
-byte bytes[POOL_BYTES + INBUF_BYTES] = {
-    0,0,0,0, // entry zero has zero length
-};
+word dict[DICT_WORDS];
+byte bytes[INBUF_BYTES + (DSTACK_WORDS * WORDSIZE) + POOL_BYTES];
+
+// set up default entries and initialise variables
+void init() {
+  INBUF_IN = INBUF_START;
+  INBUF_OUT = INBUF_START;
+  word INPUT_COUNT = 0;
+
+  DS_TOP = DSTACK_START;
+
+  POOL_HEAD = POOL_START;
+  word_write(POOL_START, 0);
+  POOL_NEXT = POOL_START+PENT_DATA;
+
+  DICT_HEAD = DICT_START;
+  dict_write(DICT_HEAD+DENT_NAME, 0);
+  dict_write(DICT_HEAD+DENT_TYPE, (word)&number);
+  dict_write(DICT_HEAD+DENT_PARAM, 0);
+  dict_write(DICT_HEAD+DENT_PREV, 0);
+
+  DICT_NEXT = DICT_START+DENT_SIZE;
+  dict_write(DICT_NEXT+DENT_NAME, 0);
+  dict_write(DICT_NEXT+DENT_TYPE, 0);
+  dict_write(DICT_NEXT+DENT_PARAM, 0);
+  dict_write(DICT_NEXT+DENT_PREV, DICT_START);
+
+  RS_TOP = RSTACK_START;
+}
 
 void run(void) {
   // TODO
 }
 
-
 address badd(address start) {
   address old_next = POOL_NEXT;
   int len = 0;
-  for (int i = 0 ;; ++i) {
-    uint8_t c = byte_read(start + i);
+  for (;; ++len) {
+    uint8_t c = byte_read(start + len);
     if (0 == c) break;
-    byte_write(POOL_NEXT+PENT_DATA + i, c);
-    ++len;
+    byte_write(POOL_NEXT+PENT_DATA + len, c);
+//printf("badd [%s] loop len=%d\n", bytes+start, len);
   }
-  word_write(POOL_NEXT, len);
+  word_write(POOL_NEXT+PENT_LEN, len);
   POOL_NEXT += PENT_DATA + roundup(len);
   POOL_HEAD = old_next;
   return POOL_HEAD;

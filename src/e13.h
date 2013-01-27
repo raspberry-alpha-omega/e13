@@ -6,25 +6,32 @@
 #define WORDSIZE 4
 
 // memory model sizes, adjusting these should be safe, just keep them all on WORDSIZE-byte boundaries
+#define MEMORY_SIZE 65536
+#define INBUF_BYTES 1024
 #define DSTACK_WORDS 256
 #define RSTACK_WORDS 256
 #define DICT_WORDS 256
-#define INBUF_BYTES 1024
-#define POOL_BYTES (65536 - (INBUF_BYTES) - (DICT_WORDS*WORDSIZE) - (RSTACK_WORDS*WORDSIZE) - (DSTACK_WORDS*WORDSIZE))
+#define POOL_BYTES (MEMORY_SIZE - (INBUF_BYTES) - (DICT_WORDS*WORDSIZE) - (RSTACK_WORDS*WORDSIZE) - (DSTACK_WORDS*WORDSIZE))
 
 // address constants, referring to memory blocks etc.
 // for development each of the memory blocks is separate and relative.
 // For deployment they should be absolute
-#define DSTACK_START 0
-#define DSTACK_END DSTACK_WORDS
+#define MEMORY_START 0
+
+#define INBUF_START MEMORY_START
+#define INBUF_END (INBUF_START + INBUF_BYTES)
+
+#define DSTACK_START INBUF_END
+#define DSTACK_END (DSTACK_START + (DSTACK_WORDS * WORDSIZE))
+
+#define POOL_START DSTACK_END
+#define POOL_END (POOL_START + POOL_BYTES)
+
 #define RSTACK_START 0
 #define RSTACK_END RSTACK_WORDS
+
 #define DICT_START 0
 #define DICT_END DICT_WORDS
-#define POOL_START 0
-#define POOL_END (POOL_START + POOL_BYTES)
-#define INBUF_START POOL_END
-#define INBUF_END (INBUF_START + INBUF_BYTES)
 
 // field offsets
 #define DENT_NAME 0
@@ -46,7 +53,6 @@ typedef uint32_t word;
 typedef uint8_t byte;
 
 // the memory model, simulating basic RAM so that I can get as close to Chuck's original design as possible.
-extern word dstack[];
 extern word rstack[];
 extern word dict[];
 extern byte bytes[];

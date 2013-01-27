@@ -13,8 +13,23 @@ static int fails = 0;
 
 void dump_stack(void) {
   printf("stack[ ");
-  for (int i = DSTACK_START; i < DS_TOP; ++i) {
-    printf("%d ", dstack[i]);
+  for (int i = DSTACK_START; i < DS_TOP; i += WORDSIZE) {
+    printf("%d ", word_read(i));
+  }
+  printf("]\n");
+}
+
+void dump_pool(void) {
+  printf("pool[\n");
+  for (int i = POOL_START; i < POOL_NEXT; ) {
+    word length = word_read(i);
+    address data = i + PENT_DATA;
+    printf(" %d[", length);
+    for (int c = 0; c < length; ++c) {
+      printf("%c", bytes[data+c]);
+    }
+    printf("\n");
+    i += WORDSIZE + length;
   }
   printf("]\n");
 }
@@ -60,7 +75,7 @@ static void return_stack() {
   START
   fail_unless(RS_TOP == RSTACK_START, "stack should be empty at start");
   rpush(1234);
-  fail_unless(RS_TOP > DSTACK_START, "after push, stack should be bigger");
+  fail_unless(RS_TOP > RSTACK_START, "after push, stack should be bigger");
   fail_unless(1234 == rpop(), "pop should fetch the pushed value");
   fail_unless(RS_TOP == RSTACK_START, "after pop, stack should be empty again");
   END
@@ -156,7 +171,7 @@ static void byte_add() {
 static void byte_lookup_not_found() {
   START
   type("");
-  fail_unless(blookup(INBUF_START) == 0, "bytes lookup of empty string should return 0");
+  fail_unless(blookup(INBUF_START) == POOL_START, "bytes lookup of empty string should return 0");
   type("x");
   fail_unless(blookup(INBUF_START) == 0xFFFFFFFF, "bytes lookup of undefined string should return FFFFFFFF");
   END
@@ -288,9 +303,13 @@ static void eval_two_numbers() {
 }
 
 void dup(word param) {
+//printf("dup before");
+//dump_stack();
   word x = pop();
   push(x);
   push(x);
+//printf("dup after");
+//dump_stack();
 }
 
 static void eval_word() {
@@ -303,7 +322,9 @@ static void eval_word() {
   fail_unless(DS_TOP == DSTACK_START, "stack should be empty at end, too");
 
   type("hello");
-  word name = badd(INBUF_START);
+  address name = badd(INBUF_START);
+//printf("%s:added [%s], got name %d\n", __FUNCTION__, bytes+INBUF_START, name);
+//dump_pool();
   dict_write(DICT_NEXT+DENT_NAME, name);
   dict_write(DICT_NEXT+DENT_TYPE, (word)&dup);
   dict_write(DICT_NEXT+DENT_PARAM, 0);
@@ -350,40 +371,8 @@ static void eval_subroutine() {
 }
 
 int reset() {
-//  printf("*"); fflush(stdout);
-  int i;
-
-  word reset_dict[8] = {
-      0, (word)&number, 0, 0,
-      0, 0, 0, DICT_START
-  };
-  for (i = 0; i < 8; ++i) {
-    dict[i] = reset_dict[i];
-  }
-  for (; i < DICT_END; ++i) {
-    dict[i] = 0;
-  }
-
-  word reset_bytes[8] = {
-      0,0,0,0,  0,0,0,0
-  };
-  for (i = 0; i < 12; ++i) {
-    bytes[i] = reset_bytes[i];
-  }
-  for (; i < POOL_BYTES + INBUF_BYTES; ++i) {
-    bytes[i] = 0;
-  }
-
-  DS_TOP = DSTACK_START;
-  RS_TOP = RSTACK_START;
-  DICT_HEAD = DICT_START;
-  DICT_NEXT = DICT_START+4;
-  POOL_HEAD = POOL_START;
-  POOL_NEXT = POOL_START+8;
-  INBUF_IN = INBUF_START;
-  INBUF_OUT = INBUF_START;
-  INPUT_COUNT = 0;
-
+  //  printf("*"); fflush(stdout);
+  init();
   return 1;
 }
 
