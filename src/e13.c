@@ -55,9 +55,9 @@ void dict_write(address p, word v) {
 }
 
 word roundup(word p) {
-  word mod = p % 4;
+  word mod = p % WORDSIZE;
   if (mod > 0) {
-    p += 4 - mod;
+    p += WORDSIZE - mod;
   }
   return p;
 }
@@ -151,9 +151,9 @@ void evaluate(address p) {
 address DS_TOP = DSTACK_START;
 address RS_TOP = RSTACK_START;
 address DICT_HEAD = DICT_START;
-address DICT_NEXT = DICT_START+4;
+address DICT_NEXT = DICT_START+DENT_SIZE;
 address POOL_HEAD = POOL_START;
-address POOL_NEXT = POOL_START+4;
+address POOL_NEXT = POOL_START+PENT_DATA;
 address RING_IN = INRING_START;
 address RING_OUT = INRING_START;
 word INPUT_COUNT = 0;
@@ -166,7 +166,7 @@ word dict[DICT_WORDS] = {
     0, 0, 0, DICT_START
 };
 byte bytes[POOL_BYTES + INRING_BYTES] = {
-    0,0,0,0,
+    0,0,0,0, // entry zero has zero length
 };
 
 void run(void) {
@@ -193,7 +193,7 @@ void dadd(void) {
   address old_next = DICT_NEXT;
   DICT_HEAD = old_next;
 
-  DICT_NEXT += 4;
+  DICT_NEXT += DENT_SIZE;
   dict[DICT_NEXT+DENT_NAME] = 0;
   dict[DICT_NEXT+DENT_TYPE] = 0;
   dict[DICT_NEXT+DENT_PARAM] = 0;

@@ -3,12 +3,14 @@
 
 #include <stdint.h>
 
-// memory model sizes, adjusting these should be safe, just keep them all on 4-byte boundaries
+#define WORDSIZE 4
+
+// memory model sizes, adjusting these should be safe, just keep them all on WORDSIZE-byte boundaries
 #define DSTACK_WORDS 256
 #define RSTACK_WORDS 256
 #define DICT_WORDS 256
 #define INRING_BYTES 1024
-#define POOL_BYTES (65536 - (INRING_BYTES) - (DICT_WORDS*4) - (RSTACK_WORDS*4) - (DSTACK_WORDS*4))
+#define POOL_BYTES (65536 - (INRING_BYTES) - (DICT_WORDS*WORDSIZE) - (RSTACK_WORDS*WORDSIZE) - (DSTACK_WORDS*WORDSIZE))
 
 // address constants, referring to memory blocks etc.
 // for development each of the memory blocks is separate and relative.
@@ -29,9 +31,10 @@
 #define DENT_TYPE 1
 #define DENT_PARAM 2
 #define DENT_PREV 3
+#define DENT_SIZE 4
 
 #define PENT_LEN 0
-#define PENT_DATA 4
+#define PENT_DATA WORDSIZE
 
 // synbolic constants
 #define OUTSIDE 0
@@ -64,14 +67,15 @@ void push(word v);
 word pop();
 void rpush(address v);
 address rpop();
-word dict_read(address p);
-void dict_write(address p, word v);
 
 byte byte_read(address p);
 void byte_write(address p, byte v);
 
 word word_read(address p);
 void word_write(address p, word v);
+
+word dict_read(address p);
+void dict_write(address p, word v);
 
 typedef void (*typefn)(word param);
 typedef void (*primfn)(void);
@@ -81,19 +85,13 @@ typedef void (*primfn)(void);
 // lookup a string in the pool and return its address or FFFFFFFF if not found
 address blookup(address start);
 
-// lookup a string in the pool and return its address or add it if not found
-address badd(address start);
-
 // lookup a symbol in the dictionary and return its address or FFFFFFFF if not found
 address dlookup(address symbol);
-
-// advance the head of the dictionary after a new top entry has been populated
-void dadd(void);
 
 // execute a dictionary entry
 void execute(typefn fn, word value);
 
-// evaluate a sequence of words, either from the inring, or from the pool
+// evaluate a sequence of words, either from input, or from the pool
 void evaluate(address p);
 
 // initialise the system variables and initial dict entries
@@ -102,7 +100,17 @@ void init(void);
 // run accepting and processing input
 void run(void);
 
+
+
+/* candidates for re-implementation as compiled words */
+
 // attempt to parse and push a number from a string
 int number(address start);
+
+// lookup a string in the pool and return its address or add it if not found
+address badd(address start);
+
+// advance the head of the dictionary after a new top entry has been populated
+void dadd(void);
 
 #endif

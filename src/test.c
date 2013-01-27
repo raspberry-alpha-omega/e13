@@ -149,7 +149,7 @@ static void byte_add() {
   fail_unless(POOL_HEAD == old_next, "pool head should me moved to old next");
   fail_unless(added == POOL_HEAD, "badd should return new address");
   fail_unless(1 == word_read(POOL_HEAD+PENT_LEN), "supplied length should be stored with text");
-  fail_unless(POOL_NEXT == POOL_HEAD + 4 + 4, "pool next should be rounded up to the start of the next word block");
+  fail_unless(POOL_NEXT == POOL_HEAD + PENT_DATA + WORDSIZE, "pool next should be rounded up to the start of the next word block");
   END
 }
 
@@ -218,29 +218,22 @@ static void not_a_number() {
 
 static void positive_number() {
   START
-  bytes[INRING_START] = '1';
-  bytes[INRING_START+1] = 0;
+  type("1");
   fail_unless(1 == number(INRING_START), "'1' should be a number");
   fail_unless(DS_TOP != DSTACK_START, "number string should push");
   fail_unless(1 == pop(), "number should be pushed");
 
-  bytes[INRING_START+1] = '2';
-  bytes[INRING_START+2] = 0;
+  type("12");
   fail_unless(1 == number(INRING_START), "'12' should be a number");
   fail_unless(DS_TOP != DSTACK_START, "number string should push");
   fail_unless(12 == pop(), "number should be pushed");
 
-  bytes[INRING_START+1] = '2';
-  bytes[INRING_START+2] = '3';
-  bytes[INRING_START+3] = 0;
+  type("123");
   fail_unless(1 == number(INRING_START), "'123' should be a number");
   fail_unless(DS_TOP != DSTACK_START, "number string should push");
   fail_unless(123 == pop(), "number should be pushed");
 
-  bytes[INRING_START+1] = '2';
-  bytes[INRING_START+2] = '3';
-  bytes[INRING_START+3] = 'p';
-  bytes[INRING_START+4] = 0;
+  type("123p");
   fail_unless(0 == number(INRING_START), "'123p' should not be a number");
   fail_unless(DS_TOP == DSTACK_START, "non-number string should not push");
   END
@@ -248,20 +241,16 @@ static void positive_number() {
 
 static void negative_number() {
   START
-  bytes[INRING_START] = '-';
-  bytes[INRING_START+1] = 0;
+  type("-");
   fail_unless(0 == number(INRING_START), "'-' should not be a number");
   fail_unless(DS_TOP == DSTACK_START, "non-number string should not push");
 
-  bytes[INRING_START+1] = '2';
-  bytes[INRING_START+2] = 0;
+  type("-2");
   fail_unless(1 == number(INRING_START), "'-2' should be a number");
   fail_unless(DS_TOP != DSTACK_START, "number string should push");
   fail_unless(-2 == pop(), "number should be pushed");
 
-  bytes[INRING_START+1] = '2';
-  bytes[INRING_START+2] = '3';
-  bytes[INRING_START+3] = 0;
+  type("-23");
   fail_unless(1 == number(INRING_START), "'-23' should be a number");
   fail_unless(DS_TOP != DSTACK_START, "number string should push");
   fail_unless(-23 == pop(), "number should be pushed");
