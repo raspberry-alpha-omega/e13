@@ -154,8 +154,8 @@ address DICT_HEAD = DICT_START;
 address DICT_NEXT = DICT_START+DENT_SIZE;
 address POOL_HEAD = POOL_START;
 address POOL_NEXT = POOL_START+PENT_DATA;
-address RING_IN = INRING_START;
-address RING_OUT = INRING_START;
+address INBUF_IN = INBUF_START;
+address INBUF_OUT = INBUF_START;
 word INPUT_COUNT = 0;
 
 // the memory model, simulating basic RAM so that I can get as close to Chuck's original design as possible.
@@ -165,7 +165,7 @@ word dict[DICT_WORDS] = {
     0, (word)&number, 0, 0,
     0, 0, 0, DICT_START
 };
-byte bytes[POOL_BYTES + INRING_BYTES] = {
+byte bytes[POOL_BYTES + INBUF_BYTES] = {
     0,0,0,0, // entry zero has zero length
 };
 

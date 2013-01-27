@@ -9,8 +9,8 @@
 #define DSTACK_WORDS 256
 #define RSTACK_WORDS 256
 #define DICT_WORDS 256
-#define INRING_BYTES 1024
-#define POOL_BYTES (65536 - (INRING_BYTES) - (DICT_WORDS*WORDSIZE) - (RSTACK_WORDS*WORDSIZE) - (DSTACK_WORDS*WORDSIZE))
+#define INBUF_BYTES 1024
+#define POOL_BYTES (65536 - (INBUF_BYTES) - (DICT_WORDS*WORDSIZE) - (RSTACK_WORDS*WORDSIZE) - (DSTACK_WORDS*WORDSIZE))
 
 // address constants, referring to memory blocks etc.
 // for development each of the memory blocks is separate and relative.
@@ -23,8 +23,8 @@
 #define DICT_END DICT_WORDS
 #define POOL_START 0
 #define POOL_END (POOL_START + POOL_BYTES)
-#define INRING_START POOL_END
-#define INRING_END (INRING_START + INRING_BYTES)
+#define INBUF_START POOL_END
+#define INBUF_END (INBUF_START + INBUF_BYTES)
 
 // field offsets
 #define DENT_NAME 0
@@ -58,8 +58,8 @@ extern address DICT_HEAD;
 extern address DICT_NEXT;
 extern address POOL_HEAD;
 extern address POOL_NEXT;
-extern address RING_IN;
-extern address RING_OUT;
+extern address INBUF_IN;
+extern address INBUF_OUT;
 extern word INPUT_COUNT;
 
 // memory access functions

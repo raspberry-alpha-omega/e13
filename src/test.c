@@ -20,20 +20,20 @@ void dump_stack(void) {
 }
 
 void type(const char* s) {
-  RING_IN = INRING_START;
+  INBUF_IN = INBUF_START;
   for (int i = 0; s[i] != 0; ++i) {
-    byte_write(RING_IN++, s[i]);
+    byte_write(INBUF_IN++, s[i]);
   }
-  byte_write(RING_IN++, 0);
+  byte_write(INBUF_IN++, 0);
 }
 
-void evaluate_inring(void) {
-  evaluate(INRING_START);
+void evaluate_INBUF(void) {
+  evaluate(INBUF_START);
 }
 
 void enter(const char* s) {
   type(s);
-  evaluate_inring();
+  evaluate_INBUF();
 }
 
 int _fail_if(const char* fn, int line, int expr, const char* message) {
@@ -145,7 +145,7 @@ static void byte_add() {
   address old_head = POOL_HEAD;
   address old_next = POOL_NEXT;
   type("a");
-  address added = badd(INRING_START);
+  address added = badd(INBUF_START);
   fail_unless(POOL_HEAD == old_next, "pool head should me moved to old next");
   fail_unless(added == POOL_HEAD, "badd should return new address");
   fail_unless(1 == word_read(POOL_HEAD+PENT_LEN), "supplied length should be stored with text");
@@ -156,19 +156,19 @@ static void byte_add() {
 static void byte_lookup_not_found() {
   START
   type("");
-  fail_unless(blookup(INRING_START) == 0, "bytes lookup of empty string should return 0");
+  fail_unless(blookup(INBUF_START) == 0, "bytes lookup of empty string should return 0");
   type("x");
-  fail_unless(blookup(INRING_START) == 0xFFFFFFFF, "bytes lookup of undefined string should return FFFFFFFF");
+  fail_unless(blookup(INBUF_START) == 0xFFFFFFFF, "bytes lookup of undefined string should return FFFFFFFF");
   END
 }
 
 static void byte_lookup_found_when_added() {
   START
   type("a");
-  fail_unless(blookup(INRING_START) == 0xFFFFFFFF, "bytes lookup of undefined string should return FFFFFFFF");
+  fail_unless(blookup(INBUF_START) == 0xFFFFFFFF, "bytes lookup of undefined string should return FFFFFFFF");
 
-  address added = badd(INRING_START);
-  address found = blookup(INRING_START);
+  address added = badd(INBUF_START);
+  address found = blookup(INBUF_START);
   fail_unless(found == added, "bytes lookup of defined string should return its address");
   END
 }
@@ -176,42 +176,42 @@ static void byte_lookup_found_when_added() {
 static void byte_lookup_found_by_length() {
   START
   type("x");
-  fail_unless(blookup(INRING_START) == 0xFFFFFFFF, "bytes lookup of undefined string should return FFFFFFFF");
+  fail_unless(blookup(INBUF_START) == 0xFFFFFFFF, "bytes lookup of undefined string should return FFFFFFFF");
 
   type("ab");
-  address added1 = badd(INRING_START);
+  address added1 = badd(INBUF_START);
   type("a");
-  fail_unless(blookup(INRING_START) == 0xFFFFFFFF, "bytes lookup of partial string should return FFFFFFFF");
+  fail_unless(blookup(INBUF_START) == 0xFFFFFFFF, "bytes lookup of partial string should return FFFFFFFF");
 
-  address added2 = badd(INRING_START);
-  fail_unless(blookup(INRING_START) == added2, "bytes lookup of defined string should return its address");
+  address added2 = badd(INBUF_START);
+  fail_unless(blookup(INBUF_START) == added2, "bytes lookup of defined string should return its address");
   END
 }
 
 static void byte_lookup_found_by_content() {
   START
   type("x");
-  fail_unless(blookup(INRING_START) == 0xFFFFFFFF, "bytes lookup of undefined string should return FFFFFFFF");
+  fail_unless(blookup(INBUF_START) == 0xFFFFFFFF, "bytes lookup of undefined string should return FFFFFFFF");
 
-  address added1 = badd(INRING_START);
+  address added1 = badd(INBUF_START);
 
   type("y");
-  fail_unless(blookup(INRING_START) == 0xFFFFFFFF, "bytes lookup of partial string should return FFFFFFFF");
+  fail_unless(blookup(INBUF_START) == 0xFFFFFFFF, "bytes lookup of partial string should return FFFFFFFF");
 
-  address added2 = badd(INRING_START);
-  fail_unless(blookup(INRING_START) == added2, "bytes lookup of defined string should return its address");
+  address added2 = badd(INBUF_START);
+  fail_unless(blookup(INBUF_START) == added2, "bytes lookup of defined string should return its address");
   END
 }
 
 static void not_a_number() {
   START
-  bytes[INRING_START] = 0;
-  fail_unless(0 == number(INRING_START), "empty string should not be a number");
+  bytes[INBUF_START] = 0;
+  fail_unless(0 == number(INBUF_START), "empty string should not be a number");
   fail_unless(DS_TOP == DSTACK_START, "empty string should not push");
 
-  bytes[INRING_START] = 'x';
-  bytes[INRING_START+1] = 0;
-  fail_unless(0 == number(INRING_START), "'x' should not be a number");
+  bytes[INBUF_START] = 'x';
+  bytes[INBUF_START+1] = 0;
+  fail_unless(0 == number(INBUF_START), "'x' should not be a number");
   fail_unless(DS_TOP == DSTACK_START, "non-number string should not push");
   END
 }
@@ -219,22 +219,22 @@ static void not_a_number() {
 static void positive_number() {
   START
   type("1");
-  fail_unless(1 == number(INRING_START), "'1' should be a number");
+  fail_unless(1 == number(INBUF_START), "'1' should be a number");
   fail_unless(DS_TOP != DSTACK_START, "number string should push");
   fail_unless(1 == pop(), "number should be pushed");
 
   type("12");
-  fail_unless(1 == number(INRING_START), "'12' should be a number");
+  fail_unless(1 == number(INBUF_START), "'12' should be a number");
   fail_unless(DS_TOP != DSTACK_START, "number string should push");
   fail_unless(12 == pop(), "number should be pushed");
 
   type("123");
-  fail_unless(1 == number(INRING_START), "'123' should be a number");
+  fail_unless(1 == number(INBUF_START), "'123' should be a number");
   fail_unless(DS_TOP != DSTACK_START, "number string should push");
   fail_unless(123 == pop(), "number should be pushed");
 
   type("123p");
-  fail_unless(0 == number(INRING_START), "'123p' should not be a number");
+  fail_unless(0 == number(INBUF_START), "'123p' should not be a number");
   fail_unless(DS_TOP == DSTACK_START, "non-number string should not push");
   END
 }
@@ -242,16 +242,16 @@ static void positive_number() {
 static void negative_number() {
   START
   type("-");
-  fail_unless(0 == number(INRING_START), "'-' should not be a number");
+  fail_unless(0 == number(INBUF_START), "'-' should not be a number");
   fail_unless(DS_TOP == DSTACK_START, "non-number string should not push");
 
   type("-2");
-  fail_unless(1 == number(INRING_START), "'-2' should be a number");
+  fail_unless(1 == number(INBUF_START), "'-2' should be a number");
   fail_unless(DS_TOP != DSTACK_START, "number string should push");
   fail_unless(-2 == pop(), "number should be pushed");
 
   type("-23");
-  fail_unless(1 == number(INRING_START), "'-23' should be a number");
+  fail_unless(1 == number(INBUF_START), "'-23' should be a number");
   fail_unless(DS_TOP != DSTACK_START, "number string should push");
   fail_unless(-23 == pop(), "number should be pushed");
   END
@@ -260,8 +260,8 @@ static void negative_number() {
 static void eval_empty() {
   START
   fail_unless(DS_TOP == DSTACK_START, "stack should be empty at start");
-  bytes[INRING_START] = 0;
-  evaluate(INRING_START);
+  bytes[INBUF_START] = 0;
+  evaluate(INBUF_START);
   fail_unless(DS_TOP == DSTACK_START, "stack should be empty at end, too");
   END
 }
@@ -303,7 +303,7 @@ static void eval_word() {
   fail_unless(DS_TOP == DSTACK_START, "stack should be empty at end, too");
 
   type("hello");
-  word name = badd(INRING_START);
+  word name = badd(INBUF_START);
   dict_write(DICT_NEXT+DENT_NAME, name);
   dict_write(DICT_NEXT+DENT_TYPE, (word)&dup);
   dict_write(DICT_NEXT+DENT_PARAM, 0);
@@ -319,9 +319,9 @@ static void eval_word() {
 
 void define(const char* names, const char* bodys) {
   type(names);
-  word name = badd(INRING_START);
+  word name = badd(INBUF_START);
   type(bodys);
-  word body = badd(INRING_START);
+  word body = badd(INBUF_START);
 
   dict_write(DICT_NEXT+DENT_NAME, name);
   dict_write(DICT_NEXT+DENT_TYPE, (word)&evaluate);
@@ -370,7 +370,7 @@ int reset() {
   for (i = 0; i < 12; ++i) {
     bytes[i] = reset_bytes[i];
   }
-  for (; i < POOL_BYTES + INRING_BYTES; ++i) {
+  for (; i < POOL_BYTES + INBUF_BYTES; ++i) {
     bytes[i] = 0;
   }
 
@@ -380,8 +380,8 @@ int reset() {
   DICT_NEXT = DICT_START+4;
   POOL_HEAD = POOL_START;
   POOL_NEXT = POOL_START+8;
-  RING_IN = INRING_START;
-  RING_OUT = INRING_START;
+  INBUF_IN = INBUF_START;
+  INBUF_OUT = INBUF_START;
   INPUT_COUNT = 0;
 
   return 1;
