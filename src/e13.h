@@ -27,19 +27,18 @@
 #define RSTACK_START DSTACK_END
 #define RSTACK_END (RSTACK_START + (RSTACK_WORDS * WORDSIZE))
 
-#define POOL_START RSTACK_END
+#define DICT_START RSTACK_END
+#define DICT_END (DICT_START + (DICT_WORDS * WORDSIZE))
+
+#define POOL_START DICT_END
 #define POOL_END (POOL_START + POOL_BYTES)
-
-
-#define DICT_START 0
-#define DICT_END DICT_WORDS
 
 // field offsets
 #define DENT_NAME 0
-#define DENT_TYPE 1
-#define DENT_PARAM 2
-#define DENT_PREV 3
-#define DENT_SIZE 4
+#define DENT_TYPE (1 * WORDSIZE)
+#define DENT_PARAM (2 * WORDSIZE)
+#define DENT_PREV (3 * WORDSIZE)
+#define DENT_SIZE (4 * WORDSIZE)
 
 #define PENT_LEN 0
 #define PENT_DATA WORDSIZE
@@ -54,8 +53,6 @@ typedef uint32_t word;
 typedef uint8_t byte;
 
 // the memory model, simulating basic RAM so that I can get as close to Chuck's original design as possible.
-extern word rstack[];
-extern word dict[];
 extern byte bytes[];
 
 // system variables, really these belong in memory, perhaps before DSTACK

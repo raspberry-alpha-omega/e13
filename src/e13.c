@@ -24,11 +24,12 @@ void word_write(address p, word v) {
   byte_write(p+2, (v & 0x00FF0000) >> 16);
   byte_write(p+3, (v & 0xFF000000) >> 24);
 }
+
 uint32_t dict_read(address p) {
-  return dict[p];
+  return word_read(p);
 }
 void dict_write(address p, word v) {
-  dict[p] = v;
+  word_write(p,v);
 }
 
 // memory access functions
@@ -175,8 +176,6 @@ address POOL_HEAD = POOL_START;
 address POOL_NEXT = POOL_START+PENT_DATA;
 
 // the memory model, simulating basic RAM so that I can get as close to Chuck's original design as possible.
-word rstack[RSTACK_WORDS];
-word dict[DICT_WORDS];
 byte bytes[INBUF_BYTES + (DSTACK_WORDS * WORDSIZE) + POOL_BYTES];
 
 // set up default entries and initialise variables
@@ -230,10 +229,10 @@ void dadd(void) {
   DICT_HEAD = old_next;
 
   DICT_NEXT += DENT_SIZE;
-  dict[DICT_NEXT+DENT_NAME] = 0;
-  dict[DICT_NEXT+DENT_TYPE] = 0;
-  dict[DICT_NEXT+DENT_PARAM] = 0;
-  dict[DICT_NEXT+DENT_PREV] = old_next;
+  word_write(DICT_NEXT+DENT_NAME, 0);
+  word_write(DICT_NEXT+DENT_TYPE, 0);
+  word_write(DICT_NEXT+DENT_PARAM, 0);
+  word_write(DICT_NEXT+DENT_PREV, old_next);
 }
 
 int natural(int negative, address start) {
