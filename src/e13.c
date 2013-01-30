@@ -41,10 +41,12 @@ word pop(void) {
   return word_read(DS_TOP);
 }
 void rpush(address p) {
-  rstack[RS_TOP++] = p;
+  word_write(RS_TOP, p);
+  RS_TOP += WORDSIZE;
 }
 address rpop(void) {
-  return rstack[--RS_TOP];
+  RS_TOP -= WORDSIZE;
+  return word_read(RS_TOP);
 }
 
 address dlookup(address symbol) {
