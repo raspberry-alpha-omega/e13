@@ -19,17 +19,45 @@ void dump_stack(void) {
   printf("]\n");
 }
 
+int dump_pent(address i) {
+  word length = word_read(i);
+  address data = i + PENT_DATA;
+  printf(" %d: %d[", i, length);
+  for (int c = 0; c < length; ++c) {
+    printf("%c", bytes[data+c]);
+  }
+  printf("]\n");
+  return roundup(length);
+}
+
 void dump_pool(void) {
   printf("pool[\n");
-  for (int i = POOL_START; i < POOL_NEXT; ) {
-    word length = word_read(i);
-    address data = i + PENT_DATA;
-    printf(" %d[", length);
+  for (int i = POOL_START; i <= POOL_HEAD; ) {
+    i += WORDSIZE + dump_pent(i);
+  }
+  printf("]\n");
+}
+
+void dump_dent(address i) {
+  word param = word_read(i+DENT_PARAM);
+  printf(" %d: %d[%s] = %p(%d", i, word_read(i+DENT_NAME), bytes+word_read(i+DENT_NAME)+PENT_DATA, word_read(i+DENT_TYPE), param);
+  if (param >= POOL_START && param < POOL_NEXT) {
+    word length = word_read(param);
+    address data = param + PENT_DATA;
+    printf("[");
     for (int c = 0; c < length; ++c) {
       printf("%c", bytes[data+c]);
     }
-    printf("\n");
-    i += WORDSIZE + length;
+    printf("]");
+  }
+  printf(") %d\n", word_read(i+DENT_PREV));
+}
+
+void dump_dict() {
+  printf("dict[\n");
+  for (int i = DICT_HEAD; i >= DICT_START; ) {
+    dump_dent(i);
+    i = word_read(i+DENT_PREV);
   }
   printf("]\n");
 }
@@ -39,11 +67,11 @@ void type(const char* s) {
   for (int i = 0; s[i] != 0; ++i) {
     byte_write(INBUF_IN++, s[i]);
   }
-  byte_write(INBUF_IN++, 0);
+  byte_write(INBUF_IN, 0);
 }
 
 void evaluate_INBUF(void) {
-  evaluate(INBUF_START);
+  evaluate(INBUF_START, INBUF_IN);
 }
 
 void enter(const char* s) {
@@ -122,7 +150,7 @@ static void dict_move_to_next() {
 
 static void dict_lookup() {
   START
-  fail_unless(dlookup(123) == 0xFFFFFFFF, "dict lookup should not find undefined item");
+  fail_unless(dlookup(123) == NOT_FOUND, "dict lookup should not find undefined item");
   dict_write(DICT_NEXT+DENT_NAME, 123);
   dadd();
   fail_unless(dlookup(123) == DICT_HEAD, "dict lookup should find item at head");
@@ -171,19 +199,19 @@ static void byte_add() {
 static void byte_lookup_not_found() {
   START
   type("");
-  fail_unless(blookup(INBUF_START) == POOL_START, "bytes lookup of empty string should return 0");
+  fail_unless(blookup(INBUF_START, INBUF_IN) == POOL_START, "bytes lookup of empty string should return 0");
   type("x");
-  fail_unless(blookup(INBUF_START) == 0xFFFFFFFF, "bytes lookup of undefined string should return FFFFFFFF");
+  fail_unless(blookup(INBUF_START, INBUF_IN) == NOT_FOUND, "bytes lookup of undefined string should return NOT_FOUND");
   END
 }
 
 static void byte_lookup_found_when_added() {
   START
   type("a");
-  fail_unless(blookup(INBUF_START) == 0xFFFFFFFF, "bytes lookup of undefined string should return FFFFFFFF");
+  fail_unless(blookup(INBUF_START, INBUF_IN) == NOT_FOUND, "bytes lookup of undefined string should return NOT_FOUND");
 
   address added = badd(INBUF_START);
-  address found = blookup(INBUF_START);
+  address found = blookup(INBUF_START, INBUF_IN);
   fail_unless(found == added, "bytes lookup of defined string should return its address");
   END
 }
@@ -191,30 +219,30 @@ static void byte_lookup_found_when_added() {
 static void byte_lookup_found_by_length() {
   START
   type("x");
-  fail_unless(blookup(INBUF_START) == 0xFFFFFFFF, "bytes lookup of undefined string should return FFFFFFFF");
+  fail_unless(blookup(INBUF_START, INBUF_IN) == NOT_FOUND, "bytes lookup of undefined string should return NOT_FOUND");
 
   type("ab");
   address added1 = badd(INBUF_START);
   type("a");
-  fail_unless(blookup(INBUF_START) == 0xFFFFFFFF, "bytes lookup of partial string should return FFFFFFFF");
+  fail_unless(blookup(INBUF_START, INBUF_IN) == NOT_FOUND, "bytes lookup of partial string should return NOT_FOUND");
 
   address added2 = badd(INBUF_START);
-  fail_unless(blookup(INBUF_START) == added2, "bytes lookup of defined string should return its address");
+  fail_unless(blookup(INBUF_START, INBUF_IN) == added2, "bytes lookup of defined string should return its address");
   END
 }
 
 static void byte_lookup_found_by_content() {
   START
   type("x");
-  fail_unless(blookup(INBUF_START) == 0xFFFFFFFF, "bytes lookup of undefined string should return FFFFFFFF");
+  fail_unless(blookup(INBUF_START, INBUF_IN) == NOT_FOUND, "bytes lookup of undefined string should return NOT_FOUND");
 
   address added1 = badd(INBUF_START);
 
   type("y");
-  fail_unless(blookup(INBUF_START) == 0xFFFFFFFF, "bytes lookup of partial string should return FFFFFFFF");
+  fail_unless(blookup(INBUF_START, INBUF_IN) == NOT_FOUND, "bytes lookup of partial string should return NOT_FOUND");
 
   address added2 = badd(INBUF_START);
-  fail_unless(blookup(INBUF_START) == added2, "bytes lookup of defined string should return its address");
+  fail_unless(blookup(INBUF_START, INBUF_IN) == added2, "bytes lookup of defined string should return its address");
   END
 }
 
@@ -276,7 +304,7 @@ static void eval_empty() {
   START
   fail_unless(DS_TOP == DSTACK_START, "stack should be empty at start");
   bytes[INBUF_START] = 0;
-  evaluate(INBUF_START);
+  evaluate(INBUF_START, INBUF_START);
   fail_unless(DS_TOP == DSTACK_START, "stack should be empty at end, too");
   END
 }
@@ -298,6 +326,22 @@ static void eval_two_numbers() {
   fail_unless(DS_TOP > DSTACK_START, "stack should not be empty at end");
   fail_unless(97 == pop(), "parameter value 97 should have been pushed");
   fail_unless(23 == pop(), "parameter value 23 should have been pushed");
+  fail_unless(DS_TOP == DSTACK_START, "stack should be empty at end, too");
+  END
+}
+
+static void eval_string() {
+  START
+  fail_unless(DS_TOP == DSTACK_START, "stack should be empty at start");
+  enter("[hello]");
+
+  fail_unless(DS_TOP >DSTACK_START, "stack should not be empty at end");
+  word pushed = pop();
+  fail_unless(0 != pushed, "pushed should be non-zero");
+  fail_unless(NOT_FOUND != pushed, "pushed should not be NOT_FOUND");
+
+  type("hello");
+  fail_unless(blookup(INBUF_START, INBUF_IN) == pushed, "string address should have been pushed");
   fail_unless(DS_TOP == DSTACK_START, "stack should be empty at end, too");
   END
 }
@@ -345,9 +389,10 @@ void define(const char* names, const char* bodys) {
   word body = badd(INBUF_START);
 
   dict_write(DICT_NEXT+DENT_NAME, name);
-  dict_write(DICT_NEXT+DENT_TYPE, (word)&evaluate);
-  dict_write(DICT_NEXT+DENT_PARAM, body+PENT_DATA);
+  dict_write(DICT_NEXT+DENT_TYPE, (word)&evaluate_pent);
+  dict_write(DICT_NEXT+DENT_PARAM, body);
   dadd();
+
 }
 
 static void eval_subroutine() {
@@ -362,6 +407,7 @@ static void eval_subroutine() {
   define("hello", "23 45");
 
   enter("96 hello");
+
   fail_unless(DS_TOP > DSTACK_START, "stack should not be empty at end");
   fail_unless(45 == pop(), "parameter value 45 should have been pushed");
   fail_unless(23 == pop(), "parameter value 23 should have been pushed");
@@ -396,6 +442,7 @@ int main() {
   test(eval_empty);
   test(eval_number);
   test(eval_two_numbers);
+  test(eval_string);
   test(eval_word);
   test(eval_subroutine);
 

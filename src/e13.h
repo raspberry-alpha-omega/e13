@@ -7,10 +7,12 @@
 
 // memory model sizes, adjusting these should be safe, just keep them all on WORDSIZE-byte boundaries
 #define MEMORY_SIZE 65536
+
 #define INBUF_BYTES 1024
 #define DSTACK_WORDS 256
 #define RSTACK_WORDS 256
 #define DICT_WORDS 256
+#define SCRATCH_BYTES 1024
 #define POOL_BYTES (MEMORY_SIZE - (INBUF_BYTES) - (DICT_WORDS*WORDSIZE) - (RSTACK_WORDS*WORDSIZE) - (DSTACK_WORDS*WORDSIZE))
 
 // address constants, referring to memory blocks etc.
@@ -30,7 +32,10 @@
 #define DICT_START RSTACK_END
 #define DICT_END (DICT_START + (DICT_WORDS * WORDSIZE))
 
-#define POOL_START DICT_END
+#define SCRATCH_START DICT_END
+#define SCRATCH_END (SCRATCH_START + SCRATCH_BYTES)
+
+#define POOL_START SCRATCH_END
 #define POOL_END (POOL_START + POOL_BYTES)
 
 // field offsets
@@ -46,7 +51,11 @@
 // synbolic constants
 #define OUTSIDE 0
 #define INSIDE 1
+#define INSTRING 2
+
 #define NOT_FOUND 0xFFFFFFFF
+#define STRING_START '['
+#define STRING_END ']'
 
 typedef uint32_t address;
 typedef uint32_t word;
@@ -64,7 +73,6 @@ extern address POOL_HEAD;
 extern address POOL_NEXT;
 extern address INBUF_IN;
 extern address INBUF_OUT;
-extern word INPUT_COUNT;
 
 // memory access functions
 void push(word v);
@@ -84,19 +92,22 @@ void dict_write(address p, word v);
 typedef void (*typefn)(word param);
 typedef void (*primfn)(void);
 
+word roundup(address p);
+
 // data manipulation functions
 
-// lookup a string in the pool and return its address or FFFFFFFF if not found
-address blookup(address start);
+// lookup a string in the pool and return its address or NOT_FOUND if not found
+address blookup(address start, word length);
 
-// lookup a symbol in the dictionary and return its address or FFFFFFFF if not found
+// lookup a symbol in the dictionary and return its address or NOT_FOUND if not found
 address dlookup(address symbol);
 
 // execute a dictionary entry
 void execute(typefn fn, word value);
 
 // evaluate a sequence of words, either from input, or from the pool
-void evaluate(address p);
+void evaluate(address p, word length);
+void evaluate_pent(address p);
 
 // initialise the system variables and initial dict entries
 void init(void);
