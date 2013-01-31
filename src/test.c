@@ -347,13 +347,9 @@ static void eval_string() {
 }
 
 void dup(word param) {
-//printf("dup before");
-//dump_stack();
   word x = pop();
   push(x);
   push(x);
-//printf("dup after");
-//dump_stack();
 }
 
 static void eval_word() {
@@ -367,8 +363,6 @@ static void eval_word() {
 
   type("hello");
   address name = badd(INBUF_START);
-//printf("%s:added [%s], got name %d\n", __FUNCTION__, bytes+INBUF_START, name);
-//dump_pool();
   dict_write(DICT_NEXT+DENT_NAME, name);
   dict_write(DICT_NEXT+DENT_TYPE, (word)&dup);
   dict_write(DICT_NEXT+DENT_PARAM, 0);
