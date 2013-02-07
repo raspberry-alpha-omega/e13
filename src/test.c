@@ -112,22 +112,22 @@ static void return_stack() {
 static void dict_read_write() {
   START
   fail_unless(DICT_NEXT > DICT_HEAD, "dict should be initialised before start");
-  fail_unless(dict_read(DICT_NEXT+DENT_NAME) == 0, "dict[next] name should be 0 at start");
-  fail_unless(dict_read(DICT_NEXT+DENT_TYPE) == 0, "dict[next] type fn should be 0 at start");
-  fail_unless(dict_read(DICT_NEXT+DENT_PARAM) == 0, "dict[next] param should be 0 at start");
-  fail_unless(dict_read(DICT_NEXT+DENT_PREV) == DICT_HEAD, "dict[next] prev should point back to head at start");
-  dict_write(DICT_NEXT+DENT_NAME, 123);
-  fail_unless(dict_read(DICT_NEXT+DENT_NAME) == 123, "dict[next] name should change when written");
+  fail_unless(word_read(DICT_NEXT+DENT_NAME) == 0, "dict[next] name should be 0 at start");
+  fail_unless(word_read(DICT_NEXT+DENT_TYPE) == 0, "dict[next] type fn should be 0 at start");
+  fail_unless(word_read(DICT_NEXT+DENT_PARAM) == 0, "dict[next] param should be 0 at start");
+  fail_unless(word_read(DICT_NEXT+DENT_PREV) == DICT_HEAD, "dict[next] prev should point back to head at start");
+  word_write(DICT_NEXT+DENT_NAME, 123);
+  fail_unless(word_read(DICT_NEXT+DENT_NAME) == 123, "dict[next] name should change when written");
   END
 }
 
 static void dict_move_to_next() {
   START
   dict_read_write();
-  dict_write(DICT_NEXT+DENT_TYPE, 456);
-  fail_unless(dict_read(DICT_NEXT+DENT_TYPE) == 456, "dict[next] type should change when written");
-  dict_write(DICT_NEXT+DENT_PARAM, 789);
-  fail_unless(dict_read(DICT_NEXT+DENT_PARAM) == 789, "dict[next] type should change when written");
+  word_write(DICT_NEXT+DENT_TYPE, 456);
+  fail_unless(word_read(DICT_NEXT+DENT_TYPE) == 456, "dict[next] type should change when written");
+  word_write(DICT_NEXT+DENT_PARAM, 789);
+  fail_unless(word_read(DICT_NEXT+DENT_PARAM) == 789, "dict[next] type should change when written");
 
   address old_head = DICT_HEAD;
   address old_next = DICT_NEXT;
@@ -135,32 +135,32 @@ static void dict_move_to_next() {
   dadd();
 
   fail_unless(DICT_HEAD == old_next, "dict head should now be what was DICT_NEXT");
-  fail_unless(dict_read(DICT_HEAD+DENT_NAME) == 123, "dict[head] name should be as defined");
-  fail_unless(dict_read(DICT_HEAD+DENT_TYPE) == 456, "dict[head] type should be as defined");
-  fail_unless(dict_read(DICT_HEAD+DENT_PARAM) == 789, "dict[head] param should be as defined");
-  fail_unless(dict_read(DICT_HEAD+DENT_PREV) == old_head, "dict[head] prev should point back to old head");
+  fail_unless(word_read(DICT_HEAD+DENT_NAME) == 123, "dict[head] name should be as defined");
+  fail_unless(word_read(DICT_HEAD+DENT_TYPE) == 456, "dict[head] type should be as defined");
+  fail_unless(word_read(DICT_HEAD+DENT_PARAM) == 789, "dict[head] param should be as defined");
+  fail_unless(word_read(DICT_HEAD+DENT_PREV) == old_head, "dict[head] prev should point back to old head");
   fail_unless(DICT_NEXT > DICT_HEAD, "dict next should still be more than head");
 
-  fail_unless(dict_read(DICT_NEXT+DENT_NAME) == 0, "new dict[next] name should be 0");
-  fail_unless(dict_read(DICT_NEXT+DENT_TYPE) == 0, "new dict[next] type fn should be 0");
-  fail_unless(dict_read(DICT_NEXT+DENT_PARAM) == 0, "new dict[next] param should be 0");
-  fail_unless(dict_read(DICT_NEXT+DENT_PREV) == DICT_HEAD, "new dict[next] prev should point back to new head");
+  fail_unless(word_read(DICT_NEXT+DENT_NAME) == 0, "new dict[next] name should be 0");
+  fail_unless(word_read(DICT_NEXT+DENT_TYPE) == 0, "new dict[next] type fn should be 0");
+  fail_unless(word_read(DICT_NEXT+DENT_PARAM) == 0, "new dict[next] param should be 0");
+  fail_unless(word_read(DICT_NEXT+DENT_PREV) == DICT_HEAD, "new dict[next] prev should point back to new head");
   END
 }
 
 static void dict_lookup() {
   START
   fail_unless(dlookup(123) == NOT_FOUND, "dict lookup should not find undefined item");
-  dict_write(DICT_NEXT+DENT_NAME, 123);
+  word_write(DICT_NEXT+DENT_NAME, 123);
   dadd();
   fail_unless(dlookup(123) == DICT_HEAD, "dict lookup should find item at head");
 
   address first_match = DICT_HEAD;
-  dict_write(DICT_NEXT+DENT_NAME, 456);
+  word_write(DICT_NEXT+DENT_NAME, 456);
   dadd();
   fail_unless(dlookup(123) == first_match, "dict lookup should find item behind head");
 
-  dict_write(DICT_NEXT+DENT_NAME, 123);
+  word_write(DICT_NEXT+DENT_NAME, 123);
   dadd();
   fail_unless(dlookup(123) != first_match, "dict lookup should find override");
   END
@@ -363,9 +363,9 @@ static void eval_word() {
 
   type("hello");
   address name = badd(INBUF_START);
-  dict_write(DICT_NEXT+DENT_NAME, name);
-  dict_write(DICT_NEXT+DENT_TYPE, (word)&dup);
-  dict_write(DICT_NEXT+DENT_PARAM, 0);
+  word_write(DICT_NEXT+DENT_NAME, name);
+  word_write(DICT_NEXT+DENT_TYPE, (word)&dup);
+  word_write(DICT_NEXT+DENT_PARAM, 0);
   dadd();
 
   enter("96 hello");
@@ -382,11 +382,10 @@ void define(const char* names, const char* bodys) {
   type(bodys);
   word body = badd(INBUF_START);
 
-  dict_write(DICT_NEXT+DENT_NAME, name);
-  dict_write(DICT_NEXT+DENT_TYPE, (word)&evaluate_pent);
-  dict_write(DICT_NEXT+DENT_PARAM, body);
+  word_write(DICT_NEXT+DENT_NAME, name);
+  word_write(DICT_NEXT+DENT_TYPE, (word)&evaluate_pent);
+  word_write(DICT_NEXT+DENT_PARAM, body);
   dadd();
-
 }
 
 static void eval_subroutine() {

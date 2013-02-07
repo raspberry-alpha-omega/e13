@@ -25,13 +25,6 @@ void word_write(address p, word v) {
   byte_write(p+3, (v & 0xFF000000) >> 24);
 }
 
-uint32_t dict_read(address p) {
-  return word_read(p);
-}
-void dict_write(address p, word v) {
-  word_write(p,v);
-}
-
 // memory access functions
 void push(word v) {
   word_write(DS_TOP, v);
@@ -53,10 +46,10 @@ address rpop(void) {
 address dlookup(address symbol) {
   address head = DICT_HEAD;
   while (head != 0) {
-    if (dict_read(head+DENT_NAME) == symbol) {
+    if (word_read(head+DENT_NAME) == symbol) {
       return head;
     }
-    head = dict_read(head+DENT_PREV);
+    head = word_read(head+DENT_PREV);
   }
   return NOT_FOUND;
 }
@@ -108,8 +101,8 @@ void eval_word(address p, int length) {
   if (name != NOT_FOUND) {
     dent = dlookup(name);
     if (dent != NOT_FOUND) {
-      typefn fn = (typefn)dict_read(dent+DENT_TYPE);
-      word param = dict_read(dent+DENT_PARAM);
+      typefn fn = (typefn)word_read(dent+DENT_TYPE);
+      word param = word_read(dent+DENT_PARAM);
       fn(param);
     }
   } else {
@@ -207,16 +200,16 @@ void init() {
   POOL_NEXT = POOL_HEAD + PENT_DATA;
 
   DICT_HEAD = DICT_START;
-  dict_write(DICT_HEAD+DENT_NAME, POOL_START);
-  dict_write(DICT_HEAD+DENT_TYPE, (word)&number);
-  dict_write(DICT_HEAD+DENT_PARAM, 0);
-  dict_write(DICT_HEAD+DENT_PREV, 0);
+  word_write(DICT_HEAD+DENT_NAME, POOL_START);
+  word_write(DICT_HEAD+DENT_TYPE, (word)&number);
+  word_write(DICT_HEAD+DENT_PARAM, 0);
+  word_write(DICT_HEAD+DENT_PREV, 0);
 
   DICT_NEXT = DICT_START+DENT_SIZE;
-  dict_write(DICT_NEXT+DENT_NAME, 0);
-  dict_write(DICT_NEXT+DENT_TYPE, 0);
-  dict_write(DICT_NEXT+DENT_PARAM, 0);
-  dict_write(DICT_NEXT+DENT_PREV, DICT_START);
+  word_write(DICT_NEXT+DENT_NAME, 0);
+  word_write(DICT_NEXT+DENT_TYPE, 0);
+  word_write(DICT_NEXT+DENT_PARAM, 0);
+  word_write(DICT_NEXT+DENT_PREV, DICT_START);
 
   RS_TOP = RSTACK_START;
 }
