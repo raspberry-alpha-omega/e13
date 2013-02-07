@@ -11,6 +11,45 @@ static int fails = 0;
 #define START //printf("%s:start\n", __FUNCTION__);
 #define END //printf("%s:end\n", __FUNCTION__);
 
+// set up default entries and initialise variables
+void init() {
+  INBUF_IN = INBUF_START;
+  INBUF_OUT = INBUF_START;
+  word INPUT_COUNT = 0;
+
+  DS_TOP = DSTACK_START;
+
+  POOL_HEAD = POOL_START;
+  word_write(POOL_HEAD + PENT_LEN, 0);
+  word_write(POOL_HEAD + PENT_NEXT, POOL_HEAD + PENT_DATA);
+  POOL_NEXT = POOL_HEAD + PENT_DATA;
+
+  DICT_HEAD = DICT_START;
+  word_write(DICT_HEAD+DENT_NAME, POOL_START);
+  word_write(DICT_HEAD+DENT_TYPE, (word)&number);
+  word_write(DICT_HEAD+DENT_PARAM, 0);
+  word_write(DICT_HEAD+DENT_PREV, 0);
+
+  DICT_NEXT = DICT_START+DENT_SIZE;
+  word_write(DICT_NEXT+DENT_NAME, 0);
+  word_write(DICT_NEXT+DENT_TYPE, 0);
+  word_write(DICT_NEXT+DENT_PARAM, 0);
+  word_write(DICT_NEXT+DENT_PREV, DICT_START);
+
+  RS_TOP = RSTACK_START;
+}
+
+void dadd(void) {
+  address old_next = DICT_NEXT;
+  DICT_HEAD = old_next;
+
+  DICT_NEXT += DENT_SIZE;
+  word_write(DICT_NEXT+DENT_NAME, 0);
+  word_write(DICT_NEXT+DENT_TYPE, 0);
+  word_write(DICT_NEXT+DENT_PARAM, 0);
+  word_write(DICT_NEXT+DENT_PREV, old_next);
+}
+
 void dump_stack(void) {
   printf("stack[ ");
   for (int i = DSTACK_START; i < DS_TOP; i += WORDSIZE) {
@@ -19,45 +58,47 @@ void dump_stack(void) {
   printf("]\n");
 }
 
-int dump_pent(address i) {
-  word length = word_read(i);
+void dump_pent_s(address i, word length) {
   address data = i + PENT_DATA;
-  printf(" %d: %d[", i, length);
   for (int c = 0; c < length; ++c) {
     printf("%c", bytes[data+c]);
   }
+}
+
+address dump_pent(address i) {
+  word length = word_read(i + PENT_LEN);
+  printf(" %d: %d[", i, length);
+  dump_pent_s(i, length);
   printf("]\n");
-  return roundup(length);
+  return word_read(i + PENT_NEXT);
 }
 
 void dump_pool(void) {
   printf("pool[\n");
-  for (int i = POOL_START; i <= POOL_HEAD; ) {
-    i += WORDSIZE + dump_pent(i);
+  for (int i = POOL_START; i != POOL_NEXT; ) {
+    i = dump_pent(i);
   }
   printf("]\n");
 }
 
-void dump_dent(address i) {
+address dump_dent(address i) {
   word param = word_read(i+DENT_PARAM);
+  address prev = word_read(i+DENT_PREV);
   printf(" %d: %d[%s] = %p(%d", i, word_read(i+DENT_NAME), bytes+word_read(i+DENT_NAME)+PENT_DATA, word_read(i+DENT_TYPE), param);
   if (param >= POOL_START && param < POOL_NEXT) {
-    word length = word_read(param);
-    address data = param + PENT_DATA;
+    word length = word_read(param + PENT_LEN);
     printf("[");
-    for (int c = 0; c < length; ++c) {
-      printf("%c", bytes[data+c]);
-    }
+    dump_pent_s(param, length);
     printf("]");
   }
-  printf(") %d\n", word_read(i+DENT_PREV));
+  printf(") %d\n", prev);
+  return prev;
 }
 
 void dump_dict() {
   printf("dict[\n");
   for (int i = DICT_HEAD; i >= DICT_START; ) {
-    dump_dent(i);
-    i = word_read(i+DENT_PREV);
+    i = dump_dent(i);
   }
   printf("]\n");
 }
@@ -191,7 +232,8 @@ static void byte_add() {
   address added = badd(INBUF_START);
   fail_unless(POOL_HEAD == old_next, "pool head should me moved to old next");
   fail_unless(added == POOL_HEAD, "badd should return new address");
-  fail_unless(1 == word_read(POOL_HEAD+PENT_LEN), "supplied length should be stored with text");
+  fail_unless(1 == word_read(POOL_HEAD + PENT_LEN), "supplied length should be stored with text");
+  fail_unless(POOL_HEAD + PENT_DATA + WORDSIZE == word_read(POOL_HEAD + PENT_NEXT), "next address should be stored with text");
   fail_unless(POOL_NEXT == POOL_HEAD + PENT_DATA + WORDSIZE, "pool next should be rounded up to the start of the next word block");
   END
 }

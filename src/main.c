@@ -4,10 +4,7 @@
 #include "io.h"
 #include "e13.h"
 
-
 int main(void) {
-  run();
-
 //  type("23 skidoo .");
 //  input();
 //

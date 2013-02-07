@@ -95,6 +95,38 @@ void primitive(address p) {
   (*((primfn*)bytes+p))();
 }
 
+int natural(int negative, address start) {
+  int n = 0;
+
+  for (int i = 0 ;; ++i) {
+    byte c = byte_read(start+i);
+    if (0 == c || ' ' == c) {
+      if (0 == i) return 0;
+      break;
+    }
+    if (c < '0' || c > '9') {
+      return 0;
+    } else {
+      n *= 10;
+      n += (c-'0');
+    }
+  }
+
+  push(negative ? -n : n);
+  return 1;
+}
+
+int number(address start) {
+  int negative = 0;
+
+  if ('-' == byte_read(start)) {
+    negative = 1;
+    ++start;
+  }
+
+  return natural(negative, start);
+}
+
 void eval_word(address p, int length) {
   address dent = NOT_FOUND;
   address name = blookup(p, length);
@@ -108,6 +140,28 @@ void eval_word(address p, int length) {
   } else {
     number(p);
   }
+}
+
+address badd(address start) {
+//printf("badd start POOL_HEAD=%d POOL_NEXT=%d\n", POOL_HEAD, POOL_NEXT);
+  address here = POOL_NEXT;
+  int len = 0;
+  for (;; ++len) {
+    uint8_t c = byte_read(start + len);
+    if (0 == c) break;
+    byte_write(here+PENT_DATA + len, c);
+//printf("badd [%s] loop len=%d\n", bytes+start, len);
+  }
+  word next = here + PENT_DATA + roundup(len);
+
+  word_write(here + PENT_LEN, len);
+  word_write(here + PENT_NEXT, next);
+
+  POOL_HEAD = here;
+  POOL_NEXT = next;
+//printf("badd end POOL_HEAD=%d POOL_NEXT=%d\n", POOL_HEAD, POOL_NEXT);
+//dump_pent(POOL_HEAD);
+  return here;
 }
 
 void evaluate(address p, address next) {
@@ -186,99 +240,3 @@ address POOL_NEXT = POOL_START+PENT_DATA;
 // the memory model, simulating basic RAM so that I can get as close to Chuck's original design as possible.
 byte bytes[INBUF_BYTES + (DSTACK_WORDS * WORDSIZE) + POOL_BYTES];
 
-// set up default entries and initialise variables
-void init() {
-  INBUF_IN = INBUF_START;
-  INBUF_OUT = INBUF_START;
-  word INPUT_COUNT = 0;
-
-  DS_TOP = DSTACK_START;
-
-  POOL_HEAD = POOL_START;
-  word_write(POOL_HEAD + PENT_LEN, 0);
-  word_write(POOL_HEAD + PENT_NEXT, POOL_HEAD + PENT_DATA);
-  POOL_NEXT = POOL_HEAD + PENT_DATA;
-
-  DICT_HEAD = DICT_START;
-  word_write(DICT_HEAD+DENT_NAME, POOL_START);
-  word_write(DICT_HEAD+DENT_TYPE, (word)&number);
-  word_write(DICT_HEAD+DENT_PARAM, 0);
-  word_write(DICT_HEAD+DENT_PREV, 0);
-
-  DICT_NEXT = DICT_START+DENT_SIZE;
-  word_write(DICT_NEXT+DENT_NAME, 0);
-  word_write(DICT_NEXT+DENT_TYPE, 0);
-  word_write(DICT_NEXT+DENT_PARAM, 0);
-  word_write(DICT_NEXT+DENT_PREV, DICT_START);
-
-  RS_TOP = RSTACK_START;
-}
-
-void run(void) {
-  // TODO
-}
-
-address badd(address start) {
-//printf("badd start POOL_HEAD=%d POOL_NEXT=%d\n", POOL_HEAD, POOL_NEXT);
-  address here = POOL_NEXT;
-  int len = 0;
-  for (;; ++len) {
-    uint8_t c = byte_read(start + len);
-    if (0 == c) break;
-    byte_write(here+PENT_DATA + len, c);
-//printf("badd [%s] loop len=%d\n", bytes+start, len);
-  }
-  word next = here + PENT_DATA + roundup(len);
-
-  word_write(here + PENT_LEN, len);
-  word_write(here + PENT_NEXT, next);
-
-  POOL_HEAD = here;
-  POOL_NEXT = next;
-//printf("badd end POOL_HEAD=%d POOL_NEXT=%d\n", POOL_HEAD, POOL_NEXT);
-//dump_pent(POOL_HEAD);
-  return here;
-}
-
-void dadd(void) {
-  address old_next = DICT_NEXT;
-  DICT_HEAD = old_next;
-
-  DICT_NEXT += DENT_SIZE;
-  word_write(DICT_NEXT+DENT_NAME, 0);
-  word_write(DICT_NEXT+DENT_TYPE, 0);
-  word_write(DICT_NEXT+DENT_PARAM, 0);
-  word_write(DICT_NEXT+DENT_PREV, old_next);
-}
-
-int natural(int negative, address start) {
-  int n = 0;
-
-  for (int i = 0 ;; ++i) {
-    byte c = byte_read(start+i);
-    if (0 == c || ' ' == c) {
-      if (0 == i) return 0;
-      break;
-    }
-    if (c < '0' || c > '9') {
-      return 0;
-    } else {
-      n *= 10;
-      n += (c-'0');
-    }
-  }
-
-  push(negative ? -n : n);
-  return 1;
-}
-
-int number(address start) {
-  int negative = 0;
-
-  if ('-' == byte_read(start)) {
-    negative = 1;
-    ++start;
-  }
-
-  return natural(negative, start);
-}
