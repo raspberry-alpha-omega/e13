@@ -46,7 +46,8 @@
 #define DENT_SIZE (4 * WORDSIZE)
 
 #define PENT_LEN 0
-#define PENT_DATA WORDSIZE
+#define PENT_NEXT (1 * WORDSIZE)
+#define PENT_DATA (2 * WORDSIZE)
 
 // synbolic constants
 #define OUTSIDE 0

@@ -92,9 +92,7 @@ address blookup(address start, word length) {
         return p;
       }
     }
-
-    p += PENT_DATA; // step past length word
-    p += roundup(len); // and the characters in the string
+    p = word_read(p + PENT_NEXT);
   }
 
   return NOT_FOUND;
@@ -204,8 +202,9 @@ void init() {
   DS_TOP = DSTACK_START;
 
   POOL_HEAD = POOL_START;
-  word_write(POOL_START, 0);
-  POOL_NEXT = POOL_START+PENT_DATA;
+  word_write(POOL_HEAD + PENT_LEN, 0);
+  word_write(POOL_HEAD + PENT_NEXT, POOL_HEAD + PENT_DATA);
+  POOL_NEXT = POOL_HEAD + PENT_DATA;
 
   DICT_HEAD = DICT_START;
   dict_write(DICT_HEAD+DENT_NAME, POOL_START);
@@ -236,9 +235,13 @@ address badd(address start) {
     byte_write(here+PENT_DATA + len, c);
 //printf("badd [%s] loop len=%d\n", bytes+start, len);
   }
-  word_write(here+PENT_LEN, len);
-  POOL_NEXT = here + PENT_DATA + roundup(len);
+  word next = here + PENT_DATA + roundup(len);
+
+  word_write(here + PENT_LEN, len);
+  word_write(here + PENT_NEXT, next);
+
   POOL_HEAD = here;
+  POOL_NEXT = next;
 //printf("badd end POOL_HEAD=%d POOL_NEXT=%d\n", POOL_HEAD, POOL_NEXT);
 //dump_pent(POOL_HEAD);
   return here;
