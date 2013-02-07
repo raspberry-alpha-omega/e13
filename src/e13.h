@@ -127,6 +127,6 @@ int number(address start);
 address badd(address start);
 
 // advance the head of the dictionary after a new top entry has been populated
-void dadd(void);
+void dnext(void);
 
 #endif

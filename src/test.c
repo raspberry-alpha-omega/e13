@@ -11,35 +11,7 @@ static int fails = 0;
 #define START //printf("%s:start\n", __FUNCTION__);
 #define END //printf("%s:end\n", __FUNCTION__);
 
-// set up default entries and initialise variables
-void init() {
-  INBUF_IN = INBUF_START;
-  INBUF_OUT = INBUF_START;
-  word INPUT_COUNT = 0;
-
-  DS_TOP = DSTACK_START;
-
-  POOL_HEAD = POOL_START;
-  word_write(POOL_HEAD + PENT_LEN, 0);
-  word_write(POOL_HEAD + PENT_NEXT, POOL_HEAD + PENT_DATA);
-  POOL_NEXT = POOL_HEAD + PENT_DATA;
-
-  DICT_HEAD = DICT_START;
-  word_write(DICT_HEAD+DENT_NAME, POOL_START);
-  word_write(DICT_HEAD+DENT_TYPE, (word)&number);
-  word_write(DICT_HEAD+DENT_PARAM, 0);
-  word_write(DICT_HEAD+DENT_PREV, 0);
-
-  DICT_NEXT = DICT_START+DENT_SIZE;
-  word_write(DICT_NEXT+DENT_NAME, 0);
-  word_write(DICT_NEXT+DENT_TYPE, 0);
-  word_write(DICT_NEXT+DENT_PARAM, 0);
-  word_write(DICT_NEXT+DENT_PREV, DICT_START);
-
-  RS_TOP = RSTACK_START;
-}
-
-void dadd(void) {
+void dnext(void) {
   address old_next = DICT_NEXT;
   DICT_HEAD = old_next;
 
@@ -48,6 +20,40 @@ void dadd(void) {
   word_write(DICT_NEXT+DENT_TYPE, 0);
   word_write(DICT_NEXT+DENT_PARAM, 0);
   word_write(DICT_NEXT+DENT_PREV, old_next);
+}
+
+void dadd(address name, address type, word param) {
+  word_write(DICT_NEXT+DENT_NAME, name);
+  word_write(DICT_NEXT+DENT_TYPE, type);
+  word_write(DICT_NEXT+DENT_PARAM, param);
+  dnext();
+}
+
+void padd(char* s, word len) {
+  word_write(POOL_NEXT + PENT_LEN, len);
+  for (int i = 0; i < len; ++i) {
+    byte_write(POOL_NEXT + PENT_DATA + i, s[i]);
+  }
+  address next = POOL_NEXT + PENT_DATA + roundup(len);
+  word_write(POOL_NEXT + PENT_NEXT, next);
+  POOL_NEXT = next;
+}
+
+// set up default entries and initialise variables
+void init() {
+  INBUF_IN = INBUF_START;
+  INBUF_OUT = INBUF_START;
+  word INPUT_COUNT = 0;
+
+  DS_TOP = DSTACK_START;
+
+  POOL_NEXT = POOL_START;
+  padd("", 0);
+
+  DICT_NEXT = DICT_START;
+  dadd(POOL_START, (word)&number, 0);
+
+  RS_TOP = RSTACK_START;
 }
 
 void dump_stack(void) {
@@ -173,7 +179,7 @@ static void dict_move_to_next() {
   address old_head = DICT_HEAD;
   address old_next = DICT_NEXT;
 
-  dadd();
+  dnext();
 
   fail_unless(DICT_HEAD == old_next, "dict head should now be what was DICT_NEXT");
   fail_unless(word_read(DICT_HEAD+DENT_NAME) == 123, "dict[head] name should be as defined");
@@ -193,16 +199,16 @@ static void dict_lookup() {
   START
   fail_unless(dlookup(123) == NOT_FOUND, "dict lookup should not find undefined item");
   word_write(DICT_NEXT+DENT_NAME, 123);
-  dadd();
+  dnext();
   fail_unless(dlookup(123) == DICT_HEAD, "dict lookup should find item at head");
 
   address first_match = DICT_HEAD;
   word_write(DICT_NEXT+DENT_NAME, 456);
-  dadd();
+  dnext();
   fail_unless(dlookup(123) == first_match, "dict lookup should find item behind head");
 
   word_write(DICT_NEXT+DENT_NAME, 123);
-  dadd();
+  dnext();
   fail_unless(dlookup(123) != first_match, "dict lookup should find override");
   END
 }
@@ -408,7 +414,7 @@ static void eval_word() {
   word_write(DICT_NEXT+DENT_NAME, name);
   word_write(DICT_NEXT+DENT_TYPE, (word)&dup);
   word_write(DICT_NEXT+DENT_PARAM, 0);
-  dadd();
+  dnext();
 
   enter("96 hello");
   fail_unless(DS_TOP > DSTACK_START, "stack should not be empty at end");
@@ -427,7 +433,7 @@ void define(const char* names, const char* bodys) {
   word_write(DICT_NEXT+DENT_NAME, name);
   word_write(DICT_NEXT+DENT_TYPE, (word)&evaluate_pent);
   word_write(DICT_NEXT+DENT_PARAM, body);
-  dadd();
+  dnext();
 }
 
 static void eval_subroutine() {
