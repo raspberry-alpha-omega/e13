@@ -487,6 +487,7 @@ int main() {
   test(eval_word);
   test(eval_subroutine);
 
+
   if (fails) {
     printf("%d tests failed\n", fails);
   } else {
