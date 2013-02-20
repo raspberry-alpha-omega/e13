@@ -2,8 +2,14 @@
 #define E13_H
 
 #include <stdint.h>
+#include <limits.h>
 
+#if UINTPTR_MAX == 0xffffffff
 #define WORDSIZE 4
+#endif
+#if UINTPTR_MAX == 0xffffffffffffffff
+#define WORDSIZE 8
+#endif
 
 // memory model sizes, adjusting these should be safe, just keep them all on WORDSIZE-byte boundaries
 #define MEMORY_SIZE 65536
@@ -54,13 +60,24 @@
 #define INSIDE 1
 #define INSTRING 2
 
-#define NOT_FOUND 0xFFFFFFFF
+#define NOT_FOUND UINTPTR_MAX
 #define STRING_START '['
 #define STRING_END ']'
 
+typedef uint8_t byte;
+
+#if (WORDSIZE == 2)
+typedef uint16_t address;
+typedef uint16_t word;
+#endif
+#if (WORDSIZE == 4)
 typedef uint32_t address;
 typedef uint32_t word;
-typedef uint8_t byte;
+#endif
+#if (WORDSIZE == 8)
+typedef uint64_t address;
+typedef uint64_t word;
+#endif
 
 // the memory model, simulating basic RAM so that I can get as close to Chuck's original design as possible.
 extern byte bytes[];
@@ -86,9 +103,6 @@ void byte_write(address p, byte v);
 
 word word_read(address p);
 void word_write(address p, word v);
-
-word dict_read(address p);
-void dict_write(address p, word v);
 
 typedef void (*typefn)(word param);
 typedef void (*primfn)(void);
