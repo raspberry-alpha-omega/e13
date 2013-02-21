@@ -1,6 +1,7 @@
 #include <stdio.h>
 
 #include "e13.h"
+#include "debug.h"
 
 static int fails = 0;
 
@@ -43,7 +44,6 @@ void padd(char* s, word len) {
 void init() {
   INBUF_IN = INBUF_START;
   INBUF_OUT = INBUF_START;
-  word INPUT_COUNT = 0;
 
   DS_TOP = DSTACK_START;
 
@@ -67,7 +67,7 @@ void dump_stack(void) {
 void dump_pent_s(address i, word length) {
   address data = i + PENT_DATA;
   for (int c = 0; c < length; ++c) {
-    printf("%c", bytes[data+c]);
+    printf("%c", byte_read(data+c));
   }
 }
 
@@ -107,6 +107,19 @@ void dump_dict() {
     i = dump_dent(i);
   }
   printf("]\n");
+}
+
+void dump_sysvars() {
+  struct sys_var *vars = (struct sys_var *)bytes;
+  printf("system vars:\n");
+  printf(" ds_top=%ld\n", vars->ds_top);
+  printf(" rs_top=%ld\n", vars->rs_top);
+  printf(" dict_head=%ld\n", vars->dict_head);
+  printf(" dict_next=%ld\n", vars->dict_next);
+  printf(" pool_head=%ld\n", vars->pool_head);
+  printf(" pool_next=%ld\n", vars->pool_next);
+  printf(" inbuf_in=%ld\n", vars->inbuf_in);
+  printf(" inbuf_out=%ld\n", vars->inbuf_out);
 }
 
 void type(const char* s) {
@@ -247,19 +260,19 @@ static void byte_add() {
 static void byte_lookup_not_found() {
   START
   type("");
-  fail_unless(blookup(INBUF_START, INBUF_IN) == POOL_START, "bytes lookup of empty string should return 0");
+  fail_unless(blookup(INBUF_START, INBUF_IN-INBUF_START) == POOL_START, "bytes lookup of empty string should return 0");
   type("x");
-  fail_unless(blookup(INBUF_START, INBUF_IN) == NOT_FOUND, "bytes lookup of undefined string should return NOT_FOUND");
+  fail_unless(blookup(INBUF_START, INBUF_IN-INBUF_START) == NOT_FOUND, "bytes lookup of undefined string should return NOT_FOUND");
   END
 }
 
 static void byte_lookup_found_when_added() {
   START
   type("a");
-  fail_unless(blookup(INBUF_START, INBUF_IN) == NOT_FOUND, "bytes lookup of undefined string should return NOT_FOUND");
+  fail_unless(blookup(INBUF_START, INBUF_IN-INBUF_START) == NOT_FOUND, "bytes lookup of undefined string should return NOT_FOUND");
 
   address added = badd(INBUF_START);
-  address found = blookup(INBUF_START, INBUF_IN);
+  address found = blookup(INBUF_START, INBUF_IN-INBUF_START);
   fail_unless(found == added, "bytes lookup of defined string should return its address");
   END
 }
@@ -267,30 +280,30 @@ static void byte_lookup_found_when_added() {
 static void byte_lookup_found_by_length() {
   START
   type("x");
-  fail_unless(blookup(INBUF_START, INBUF_IN) == NOT_FOUND, "bytes lookup of undefined string should return NOT_FOUND");
+  fail_unless(blookup(INBUF_START, INBUF_IN-INBUF_START) == NOT_FOUND, "bytes lookup of undefined string should return NOT_FOUND");
 
   type("ab");
   address added1 = badd(INBUF_START);
   type("a");
-  fail_unless(blookup(INBUF_START, INBUF_IN) == NOT_FOUND, "bytes lookup of partial string should return NOT_FOUND");
+  fail_unless(blookup(INBUF_START, INBUF_IN-INBUF_START) == NOT_FOUND, "bytes lookup of partial string should return NOT_FOUND");
 
   address added2 = badd(INBUF_START);
-  fail_unless(blookup(INBUF_START, INBUF_IN) == added2, "bytes lookup of defined string should return its address");
+  fail_unless(blookup(INBUF_START, INBUF_IN-INBUF_START) == added2, "bytes lookup of defined string should return its address");
   END
 }
 
 static void byte_lookup_found_by_content() {
   START
   type("x");
-  fail_unless(blookup(INBUF_START, INBUF_IN) == NOT_FOUND, "bytes lookup of undefined string should return NOT_FOUND");
+  fail_unless(blookup(INBUF_START, INBUF_IN-INBUF_START) == NOT_FOUND, "bytes lookup of undefined string should return NOT_FOUND");
 
   address added1 = badd(INBUF_START);
 
   type("y");
-  fail_unless(blookup(INBUF_START, INBUF_IN) == NOT_FOUND, "bytes lookup of partial string should return NOT_FOUND");
+  fail_unless(blookup(INBUF_START, INBUF_IN-INBUF_START) == NOT_FOUND, "bytes lookup of partial string should return NOT_FOUND");
 
   address added2 = badd(INBUF_START);
-  fail_unless(blookup(INBUF_START, INBUF_IN) == added2, "bytes lookup of defined string should return its address");
+  fail_unless(blookup(INBUF_START, INBUF_IN-INBUF_START) == added2, "bytes lookup of defined string should return its address");
   END
 }
 
@@ -389,7 +402,7 @@ static void eval_string() {
   fail_unless(NOT_FOUND != pushed, "pushed should not be NOT_FOUND");
 
   type("hello");
-  fail_unless(blookup(INBUF_START, INBUF_IN) == pushed, "string address should have been pushed");
+  fail_unless(blookup(INBUF_START, INBUF_IN-INBUF_START) == pushed, "string address should have been pushed");
   fail_unless(DS_TOP == DSTACK_START, "stack should be empty at end, too");
   END
 }

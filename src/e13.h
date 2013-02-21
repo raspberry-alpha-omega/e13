@@ -11,6 +11,21 @@
 #define WORDSIZE 8
 #endif
 
+typedef uint8_t byte;
+
+#if (WORDSIZE == 2)
+typedef uint16_t address;
+typedef uint16_t word;
+#endif
+#if (WORDSIZE == 4)
+typedef uint32_t address;
+typedef uint32_t word;
+#endif
+#if (WORDSIZE == 8)
+typedef uint64_t address;
+typedef uint64_t word;
+#endif
+
 // memory model sizes, adjusting these should be safe, just keep them all on WORDSIZE-byte boundaries
 #define MEMORY_SIZE 65536
 
@@ -21,10 +36,31 @@
 #define SCRATCH_BYTES 1024
 #define POOL_BYTES (MEMORY_SIZE - (INBUF_BYTES) - (DICT_WORDS*WORDSIZE) - (RSTACK_WORDS*WORDSIZE) - (DSTACK_WORDS*WORDSIZE))
 
+struct sys_var {
+  address ds_top;
+  address rs_top;
+  address dict_head;
+  address dict_next;
+  address pool_head;
+  address pool_next;
+  address inbuf_in;
+  address inbuf_out;
+};
+
+#define sys_var(name) (((struct sys_var*)bytes)->name)
+#define DS_TOP sys_var(ds_top)
+#define RS_TOP sys_var(rs_top)
+#define DICT_HEAD sys_var(dict_head)
+#define DICT_NEXT sys_var(dict_next)
+#define POOL_HEAD sys_var(pool_head)
+#define POOL_NEXT sys_var(pool_next)
+#define INBUF_IN sys_var(inbuf_in)
+#define INBUF_OUT sys_var(inbuf_out)
+
 // address constants, referring to memory blocks etc.
 // for development each of the memory blocks is separate and relative.
 // For deployment they should be absolute
-#define MEMORY_START 0
+#define MEMORY_START (0 + sizeof(struct sys_var))
 
 #define INBUF_START MEMORY_START
 #define INBUF_END (INBUF_START + INBUF_BYTES)
@@ -64,33 +100,9 @@
 #define STRING_START '['
 #define STRING_END ']'
 
-typedef uint8_t byte;
 
-#if (WORDSIZE == 2)
-typedef uint16_t address;
-typedef uint16_t word;
-#endif
-#if (WORDSIZE == 4)
-typedef uint32_t address;
-typedef uint32_t word;
-#endif
-#if (WORDSIZE == 8)
-typedef uint64_t address;
-typedef uint64_t word;
-#endif
-
-// the memory model, simulating basic RAM so that I can get as close to Chuck's original design as possible.
+// the memory model, simulating basic ROM and RAM so that I can get as close to Chuck's original design as possible.
 extern byte bytes[];
-
-// system variables, really these belong in memory, perhaps before DSTACK
-extern address DS_TOP;
-extern address RS_TOP;
-extern address DICT_HEAD;
-extern address DICT_NEXT;
-extern address POOL_HEAD;
-extern address POOL_NEXT;
-extern address INBUF_IN;
-extern address INBUF_OUT;
 
 // memory access functions
 void push(word v);

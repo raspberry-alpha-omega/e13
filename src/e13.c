@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include "e13.h"
 
+#include "debug.h"
+
 uint8_t byte_read(address p) {
   return bytes[p];
 }
@@ -238,21 +240,6 @@ void evaluate_pent(address pent) {
   address start = pent+PENT_DATA;
   evaluate(start, start + word_read(pent));
 }
-
-// system variables, really these belong in target memory, perhaps before DSTACK or after the byte pool
-address INBUF_IN = INBUF_START;
-address INBUF_OUT = INBUF_START;
-word INPUT_COUNT = 0;
-
-address DS_TOP = DSTACK_START;
-
-address RS_TOP = RSTACK_START;
-
-address DICT_HEAD = DICT_START;
-address DICT_NEXT = DICT_START+DENT_SIZE;
-
-address POOL_HEAD = POOL_START;
-address POOL_NEXT = POOL_START+PENT_DATA;
 
 // the memory model, simulating basic RAM so that I can get as close to Chuck's original design as possible.
 byte bytes[MEMORY_SIZE];
