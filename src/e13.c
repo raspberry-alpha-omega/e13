@@ -5,11 +5,18 @@
 
 #include "debug.h"
 
+// the memory model, simulating basic RAM so that I can get as close to Chuck's original design as possible.
+byte bytes[MEMORY_SIZE];
+struct sys_var* sys_vars = (struct sys_var*)bytes;
+
+byte* real_address(address a) {
+  return bytes + a;
+}
 uint8_t byte_read(address p) {
-  return bytes[p];
+  return *real_address(p);
 }
 void byte_write(address p, byte v) {
-  bytes[p] = v;
+  *real_address(p) = v;
 }
 word word_read(address p) {
   word ret = 0;
@@ -111,7 +118,7 @@ address blookup(address start, word length) {
 }
 
 void primitive(address p) {
-  (*((primfn*)bytes+p))();
+  (*((primfn*)real_address(p)))();
 }
 
 int natural(int negative, address start) {
@@ -169,7 +176,7 @@ address badd(address start) {
     uint8_t c = byte_read(start + len);
     if (0 == c) break;
     byte_write(here+PENT_DATA + len, c);
-//printf("badd [%s] loop len=%d\n", bytes+start, len);
+//printf("badd [%s] loop len=%d\n", real_address(start), len);
   }
   word next = here + PENT_DATA + roundup(len);
 
@@ -240,7 +247,3 @@ void evaluate_pent(address pent) {
   address start = pent+PENT_DATA;
   evaluate(start, start + word_read(pent));
 }
-
-// the memory model, simulating basic RAM so that I can get as close to Chuck's original design as possible.
-byte bytes[MEMORY_SIZE];
-

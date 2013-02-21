@@ -12,6 +12,7 @@ static int fails = 0;
 #define START //printf("%s:start\n", __FUNCTION__);
 #define END //printf("%s:end\n", __FUNCTION__);
 
+
 void dnext(void) {
   address old_next = DICT_NEXT;
   DICT_HEAD = old_next;
@@ -90,7 +91,7 @@ void dump_pool(void) {
 address dump_dent(address i) {
   word param = word_read(i+DENT_PARAM);
   address prev = word_read(i+DENT_PREV);
-  printf(" %d: %d[%s] = %p(%d", i, word_read(i+DENT_NAME), bytes+word_read(i+DENT_NAME)+PENT_DATA, word_read(i+DENT_TYPE), param);
+  printf(" %d: %d[%s] = %p(%d", i, word_read(i+DENT_NAME), real_address(word_read(i+DENT_NAME)+PENT_DATA), word_read(i+DENT_TYPE), param);
   if (param >= POOL_START && param < POOL_NEXT) {
     word length = word_read(param + PENT_LEN);
     printf("[");
@@ -110,16 +111,15 @@ void dump_dict() {
 }
 
 void dump_sysvars() {
-  struct sys_var *vars = (struct sys_var *)bytes;
   printf("system vars:\n");
-  printf(" ds_top=%ld\n", vars->ds_top);
-  printf(" rs_top=%ld\n", vars->rs_top);
-  printf(" dict_head=%ld\n", vars->dict_head);
-  printf(" dict_next=%ld\n", vars->dict_next);
-  printf(" pool_head=%ld\n", vars->pool_head);
-  printf(" pool_next=%ld\n", vars->pool_next);
-  printf(" inbuf_in=%ld\n", vars->inbuf_in);
-  printf(" inbuf_out=%ld\n", vars->inbuf_out);
+  printf(" ds_top=%ld\n", sys_vars->ds_top);
+  printf(" rs_top=%ld\n", sys_vars->rs_top);
+  printf(" dict_head=%ld\n", sys_vars->dict_head);
+  printf(" dict_next=%ld\n", sys_vars->dict_next);
+  printf(" pool_head=%ld\n", sys_vars->pool_head);
+  printf(" pool_next=%ld\n", sys_vars->pool_next);
+  printf(" inbuf_in=%ld\n", sys_vars->inbuf_in);
+  printf(" inbuf_out=%ld\n", sys_vars->inbuf_out);
 }
 
 void type(const char* s) {
@@ -226,22 +226,22 @@ static void dict_lookup() {
   END
 }
 
-static void bytes_read_write() {
+static void pool_read_write() {
   START
   fail_unless(byte_read(POOL_NEXT) == 0, "pool next should be 0 at start");
   byte_write(POOL_NEXT, 123);
   fail_unless(byte_read(POOL_NEXT) == 123, "pool next should contain the updated value");
 
   word_write(POOL_NEXT, 0xaabbccdd);
-  fail_unless(byte_read(POOL_NEXT+0) == 0xdd, "pool bytes should contain stored word (byte 0)");
-  fail_unless(byte_read(POOL_NEXT+1) == 0xcc, "pool bytes should contain stored word (byte 1)");
-  fail_unless(byte_read(POOL_NEXT+2) == 0xbb, "pool bytes should contain stored word (byte 2)");
-  fail_unless(byte_read(POOL_NEXT+3) == 0xaa, "pool bytes should contain stored word (byte 3)");
+  fail_unless(byte_read(POOL_NEXT+0) == 0xdd, "pool should contain stored word (byte 0)");
+  fail_unless(byte_read(POOL_NEXT+1) == 0xcc, "pool should contain stored word (byte 1)");
+  fail_unless(byte_read(POOL_NEXT+2) == 0xbb, "pool should contain stored word (byte 2)");
+  fail_unless(byte_read(POOL_NEXT+3) == 0xaa, "pool should contain stored word (byte 3)");
   fail_unless(word_read(POOL_NEXT) == 0xaabbccdd, "word_read should read the stored value");
   END
 }
 
-static void byte_add() {
+static void pool_add() {
   START
   fail_unless(POOL_NEXT > POOL_HEAD, "pool next should be beyond pool head");
 
@@ -257,64 +257,64 @@ static void byte_add() {
   END
 }
 
-static void byte_lookup_not_found() {
+static void pool_lookup_not_found() {
   START
   type("");
-  fail_unless(blookup(INBUF_START, INBUF_IN-INBUF_START) == POOL_START, "bytes lookup of empty string should return 0");
+  fail_unless(blookup(INBUF_START, INBUF_IN-INBUF_START) == POOL_START, "pool lookup of empty string should return 0");
   type("x");
-  fail_unless(blookup(INBUF_START, INBUF_IN-INBUF_START) == NOT_FOUND, "bytes lookup of undefined string should return NOT_FOUND");
+  fail_unless(blookup(INBUF_START, INBUF_IN-INBUF_START) == NOT_FOUND, "pool lookup of undefined string should return NOT_FOUND");
   END
 }
 
-static void byte_lookup_found_when_added() {
+static void pool_lookup_found_when_added() {
   START
   type("a");
-  fail_unless(blookup(INBUF_START, INBUF_IN-INBUF_START) == NOT_FOUND, "bytes lookup of undefined string should return NOT_FOUND");
+  fail_unless(blookup(INBUF_START, INBUF_IN-INBUF_START) == NOT_FOUND, "pool lookup of undefined string should return NOT_FOUND");
 
   address added = badd(INBUF_START);
   address found = blookup(INBUF_START, INBUF_IN-INBUF_START);
-  fail_unless(found == added, "bytes lookup of defined string should return its address");
+  fail_unless(found == added, "pool lookup of defined string should return its address");
   END
 }
 
-static void byte_lookup_found_by_length() {
+static void pool_lookup_found_by_length() {
   START
   type("x");
-  fail_unless(blookup(INBUF_START, INBUF_IN-INBUF_START) == NOT_FOUND, "bytes lookup of undefined string should return NOT_FOUND");
+  fail_unless(blookup(INBUF_START, INBUF_IN-INBUF_START) == NOT_FOUND, "pool lookup of undefined string should return NOT_FOUND");
 
   type("ab");
   address added1 = badd(INBUF_START);
   type("a");
-  fail_unless(blookup(INBUF_START, INBUF_IN-INBUF_START) == NOT_FOUND, "bytes lookup of partial string should return NOT_FOUND");
+  fail_unless(blookup(INBUF_START, INBUF_IN-INBUF_START) == NOT_FOUND, "pool lookup of partial string should return NOT_FOUND");
 
   address added2 = badd(INBUF_START);
-  fail_unless(blookup(INBUF_START, INBUF_IN-INBUF_START) == added2, "bytes lookup of defined string should return its address");
+  fail_unless(blookup(INBUF_START, INBUF_IN-INBUF_START) == added2, "pool lookup of defined string should return its address");
   END
 }
 
-static void byte_lookup_found_by_content() {
+static void pool_lookup_found_by_content() {
   START
   type("x");
-  fail_unless(blookup(INBUF_START, INBUF_IN-INBUF_START) == NOT_FOUND, "bytes lookup of undefined string should return NOT_FOUND");
+  fail_unless(blookup(INBUF_START, INBUF_IN-INBUF_START) == NOT_FOUND, "pool lookup of undefined string should return NOT_FOUND");
 
   address added1 = badd(INBUF_START);
 
   type("y");
-  fail_unless(blookup(INBUF_START, INBUF_IN-INBUF_START) == NOT_FOUND, "bytes lookup of partial string should return NOT_FOUND");
+  fail_unless(blookup(INBUF_START, INBUF_IN-INBUF_START) == NOT_FOUND, "pool lookup of partial string should return NOT_FOUND");
 
   address added2 = badd(INBUF_START);
-  fail_unless(blookup(INBUF_START, INBUF_IN-INBUF_START) == added2, "bytes lookup of defined string should return its address");
+  fail_unless(blookup(INBUF_START, INBUF_IN-INBUF_START) == added2, "pool lookup of defined string should return its address");
   END
 }
 
 static void not_a_number() {
   START
-  bytes[INBUF_START] = 0;
+  byte_write(INBUF_START, 0);
   fail_unless(0 == number(INBUF_START), "empty string should not be a number");
   fail_unless(DS_TOP == DSTACK_START, "empty string should not push");
 
-  bytes[INBUF_START] = 'x';
-  bytes[INBUF_START+1] = 0;
+  byte_write(INBUF_START, 'x');
+  byte_write(INBUF_START+1, 0);
   fail_unless(0 == number(INBUF_START), "'x' should not be a number");
   fail_unless(DS_TOP == DSTACK_START, "non-number string should not push");
   END
@@ -364,7 +364,7 @@ static void negative_number() {
 static void eval_empty() {
   START
   fail_unless(DS_TOP == DSTACK_START, "stack should be empty at start");
-  bytes[INBUF_START] = 0;
+  byte_write(INBUF_START, 0);
   evaluate(INBUF_START, INBUF_START);
   fail_unless(DS_TOP == DSTACK_START, "stack should be empty at end, too");
   END
@@ -486,12 +486,12 @@ int main() {
   test(dict_read_write);
   test(dict_move_to_next);
   test(dict_lookup);
-  test(bytes_read_write);
-  test(byte_add);
-  test(byte_lookup_not_found);
-  test(byte_lookup_found_when_added);
-  test(byte_lookup_found_by_length);
-  test(byte_lookup_found_by_content);
+  test(pool_read_write);
+  test(pool_add);
+  test(pool_lookup_not_found);
+  test(pool_lookup_found_when_added);
+  test(pool_lookup_found_by_length);
+  test(pool_lookup_found_by_content);
   test(not_a_number);
   test(positive_number);
   test(negative_number);

@@ -46,8 +46,9 @@ struct sys_var {
   address inbuf_in;
   address inbuf_out;
 };
+extern struct sys_var* sys_vars;
 
-#define sys_var(name) (((struct sys_var*)bytes)->name)
+#define sys_var(name) sys_vars->name
 #define DS_TOP sys_var(ds_top)
 #define RS_TOP sys_var(rs_top)
 #define DICT_HEAD sys_var(dict_head)
@@ -100,10 +101,6 @@ struct sys_var {
 #define STRING_START '['
 #define STRING_END ']'
 
-
-// the memory model, simulating basic ROM and RAM so that I can get as close to Chuck's original design as possible.
-extern byte bytes[];
-
 // memory access functions
 void push(word v);
 word pop();
@@ -115,6 +112,8 @@ void byte_write(address p, byte v);
 
 word word_read(address p);
 void word_write(address p, word v);
+
+byte* real_address(address a);
 
 typedef void (*typefn)(word param);
 typedef void (*primfn)(void);
