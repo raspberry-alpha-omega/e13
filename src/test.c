@@ -41,9 +41,11 @@ void padd(char* s, word len) {
   POOL_NEXT = next;
 }
 
+#define MEMORY_START (0 + sizeof(struct sys_const) + sizeof(struct sys_var))
+
 // set up default entries and initialise variables
 void init() {
-  //set "constants"
+  // set "constants"
   INBUF_START = MEMORY_START;
   INBUF_END = INBUF_START + INBUF_BYTES;
 

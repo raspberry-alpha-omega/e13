@@ -36,28 +36,6 @@ typedef uint64_t word;
 #define SCRATCH_BYTES 1024
 #define POOL_BYTES (MEMORY_SIZE - (INBUF_BYTES) - (DICT_WORDS*WORDSIZE) - (RSTACK_WORDS*WORDSIZE) - (DSTACK_WORDS*WORDSIZE))
 
-struct sys_var {
-  address ds_top;
-  address rs_top;
-  address dict_head;
-  address dict_next;
-  address pool_head;
-  address pool_next;
-  address inbuf_in;
-  address inbuf_out;
-};
-extern struct sys_var* sys_vars;
-
-#define sys_var(name) sys_vars->name
-#define DS_TOP sys_var(ds_top)
-#define RS_TOP sys_var(rs_top)
-#define DICT_HEAD sys_var(dict_head)
-#define DICT_NEXT sys_var(dict_next)
-#define POOL_HEAD sys_var(pool_head)
-#define POOL_NEXT sys_var(pool_next)
-#define INBUF_IN sys_var(inbuf_in)
-#define INBUF_OUT sys_var(inbuf_out)
-
 struct sys_const {
   address inbuf_start;
   address inbuf_end;
@@ -88,10 +66,27 @@ extern struct sys_const* sys_consts;
 #define POOL_START sys_const(pool_start)
 #define POOL_END sys_const(pool_end)
 
-// address constants, referring to memory blocks etc.
-// for development each of the memory blocks is separate and relative.
-// For deployment they should be absolute
-#define MEMORY_START (0 + sizeof(struct sys_var) + sizeof(struct sys_const))
+struct sys_var {
+  address ds_top;
+  address rs_top;
+  address dict_head;
+  address dict_next;
+  address pool_head;
+  address pool_next;
+  address inbuf_in;
+  address inbuf_out;
+};
+extern struct sys_var* sys_vars;
+
+#define sys_var(name) sys_vars->name
+#define DS_TOP sys_var(ds_top)
+#define RS_TOP sys_var(rs_top)
+#define DICT_HEAD sys_var(dict_head)
+#define DICT_NEXT sys_var(dict_next)
+#define POOL_HEAD sys_var(pool_head)
+#define POOL_NEXT sys_var(pool_next)
+#define INBUF_IN sys_var(inbuf_in)
+#define INBUF_OUT sys_var(inbuf_out)
 
 // field offsets
 #define DENT_NAME 0
