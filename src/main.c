@@ -1,7 +1,6 @@
 #include <stdio.h> // debugging only, remove for final version
 
 #include <stdint.h>
-#include "io.h"
 #include "e13.h"
 
 int main(void) {
