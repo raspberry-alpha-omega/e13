@@ -466,6 +466,8 @@ int reset() {
 #define test(fn) if (reset()) fn()
 
 int main() {
+  printf("running tests with WORDSIZE [%d]\n", WORDSIZE);
+
   test(data_stack);
   test(return_stack);
   test(dict_read_write);
