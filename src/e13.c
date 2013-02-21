@@ -255,5 +255,5 @@ address POOL_HEAD = POOL_START;
 address POOL_NEXT = POOL_START+PENT_DATA;
 
 // the memory model, simulating basic RAM so that I can get as close to Chuck's original design as possible.
-byte bytes[INBUF_BYTES + (DSTACK_WORDS * WORDSIZE) + POOL_BYTES];
+byte bytes[MEMORY_SIZE];
 
