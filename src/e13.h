@@ -58,28 +58,40 @@ extern struct sys_var* sys_vars;
 #define INBUF_IN sys_var(inbuf_in)
 #define INBUF_OUT sys_var(inbuf_out)
 
+struct sys_const {
+  address inbuf_start;
+  address inbuf_end;
+  address dstack_start;
+  address dstack_end;
+  address rstack_start;
+  address rstack_end;
+  address dict_start;
+  address dict_end;
+  address scratch_start;
+  address scratch_end;
+  address pool_start;
+  address pool_end;
+};
+extern struct sys_const* sys_consts;
+
+#define sys_const(name) sys_consts->name
+#define INBUF_START sys_const(inbuf_start)
+#define INBUF_END sys_const(inbuf_end)
+#define DSTACK_START sys_const(dstack_start)
+#define DSTACK_END sys_const(dstack_end)
+#define RSTACK_START sys_const(rstack_start)
+#define RSTACK_END sys_const(rstack_end)
+#define DICT_START sys_const(dict_start)
+#define DICT_END sys_const(dict_end)
+#define SCRATCH_START sys_const(scratch_start)
+#define SCRATCH_END sys_const(scratch_end)
+#define POOL_START sys_const(pool_start)
+#define POOL_END sys_const(pool_end)
+
 // address constants, referring to memory blocks etc.
 // for development each of the memory blocks is separate and relative.
 // For deployment they should be absolute
-#define MEMORY_START (0 + sizeof(struct sys_var))
-
-#define INBUF_START MEMORY_START
-#define INBUF_END (INBUF_START + INBUF_BYTES)
-
-#define DSTACK_START INBUF_END
-#define DSTACK_END (DSTACK_START + (DSTACK_WORDS * WORDSIZE))
-
-#define RSTACK_START DSTACK_END
-#define RSTACK_END (RSTACK_START + (RSTACK_WORDS * WORDSIZE))
-
-#define DICT_START RSTACK_END
-#define DICT_END (DICT_START + (DICT_WORDS * WORDSIZE))
-
-#define SCRATCH_START DICT_END
-#define SCRATCH_END (SCRATCH_START + SCRATCH_BYTES)
-
-#define POOL_START SCRATCH_END
-#define POOL_END (POOL_START + POOL_BYTES)
+#define MEMORY_START (0 + sizeof(struct sys_var) + sizeof(struct sys_const))
 
 // field offsets
 #define DENT_NAME 0
