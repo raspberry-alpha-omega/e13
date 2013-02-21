@@ -36,6 +36,8 @@ typedef uint64_t word;
 #define SCRATCH_BYTES 1024
 #define POOL_BYTES (MEMORY_SIZE - (INBUF_BYTES) - (DICT_WORDS*WORDSIZE) - (RSTACK_WORDS*WORDSIZE) - (DSTACK_WORDS*WORDSIZE))
 
+extern byte* memory_start;
+
 struct sys_const {
   address inbuf_start;
   address inbuf_end;

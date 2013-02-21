@@ -32,6 +32,7 @@ void dadd(address name, address type, word param) {
 }
 
 void padd(char* s, word len) {
+  POOL_HEAD = POOL_NEXT;
   word_write(POOL_NEXT + PENT_LEN, len);
   for (int i = 0; i < len; ++i) {
     byte_write(POOL_NEXT + PENT_DATA + i, s[i]);
@@ -41,12 +42,10 @@ void padd(char* s, word len) {
   POOL_NEXT = next;
 }
 
-#define MEMORY_START (0 + sizeof(struct sys_const) + sizeof(struct sys_var))
-
 // set up default entries and initialise variables
 void init() {
   // set "constants"
-  INBUF_START = MEMORY_START;
+  INBUF_START = (address)(memory_start + sizeof(struct sys_const) + sizeof(struct sys_var));
   INBUF_END = INBUF_START + INBUF_BYTES;
 
   DSTACK_START = INBUF_END;
@@ -71,6 +70,7 @@ void init() {
   DS_TOP = DSTACK_START;
 
   POOL_NEXT = POOL_START;
+  POOL_HEAD = POOL_START;
   padd("", 0);
 
   DICT_NEXT = DICT_START;
@@ -78,6 +78,35 @@ void init() {
 
   RS_TOP = RSTACK_START;
 }
+
+void dump_sysconsts() {
+  printf("system consts:\n");
+  printf(" inbuf_start=    %*x\n", WORDSIZE*2, sys_consts->inbuf_start);
+  printf(" inbuf_end=      %*x\n", WORDSIZE*2, sys_consts->inbuf_end);
+  printf(" dstack_start=   %*x\n", WORDSIZE*2, sys_consts->dstack_start);
+  printf(" dstack_end=     %*x\n", WORDSIZE*2, sys_consts->dstack_end);
+  printf(" rstack_start=   %*x\n", WORDSIZE*2, sys_consts->rstack_start);
+  printf(" rstack_end=     %*x\n", WORDSIZE*2, sys_consts->rstack_end);
+  printf(" dict_start=     %*x\n", WORDSIZE*2, sys_consts->dict_start);
+  printf(" dict_end=       %*x\n", WORDSIZE*2, sys_consts->dict_end);
+  printf(" scratch_start=  %*x\n", WORDSIZE*2, sys_consts->scratch_start);
+  printf(" scratch_end=    %*x\n", WORDSIZE*2, sys_consts->scratch_end);
+  printf(" pool_start=     %*x\n", WORDSIZE*2, sys_consts->pool_start);
+  printf(" pool_end=       %*x\n", WORDSIZE*2, sys_consts->pool_end);
+}
+
+void dump_sysvars() {
+  printf("system vars:\n");
+  printf(" ds_top=         %*x\n", WORDSIZE*2, sys_vars->ds_top);
+  printf(" rs_top=         %*x\n", WORDSIZE*2, sys_vars->rs_top);
+  printf(" dict_head=      %*x\n", WORDSIZE*2, sys_vars->dict_head);
+  printf(" dict_next=      %*x\n", WORDSIZE*2, sys_vars->dict_next);
+  printf(" pool_head=      %*x\n", WORDSIZE*2, sys_vars->pool_head);
+  printf(" pool_next=      %*x\n", WORDSIZE*2, sys_vars->pool_next);
+  printf(" inbuf_in=       %*x\n", WORDSIZE*2, sys_vars->inbuf_in);
+  printf(" inbuf_out=      %*x\n", WORDSIZE*2, sys_vars->inbuf_out);
+}
+
 
 void dump_stack(void) {
   printf("stack[ ");
@@ -130,18 +159,6 @@ void dump_dict() {
     i = dump_dent(i);
   }
   printf("]\n");
-}
-
-void dump_sysvars() {
-  printf("system vars:\n");
-  printf(" ds_top=%ld\n", sys_vars->ds_top);
-  printf(" rs_top=%ld\n", sys_vars->rs_top);
-  printf(" dict_head=%ld\n", sys_vars->dict_head);
-  printf(" dict_next=%ld\n", sys_vars->dict_next);
-  printf(" pool_head=%ld\n", sys_vars->pool_head);
-  printf(" pool_next=%ld\n", sys_vars->pool_next);
-  printf(" inbuf_in=%ld\n", sys_vars->inbuf_in);
-  printf(" inbuf_out=%ld\n", sys_vars->inbuf_out);
 }
 
 void type(const char* s) {

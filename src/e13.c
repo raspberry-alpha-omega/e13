@@ -7,12 +7,15 @@
 
 // the memory model, simulating basic RAM so that I can get as close to Chuck's original design as possible.
 byte bytes[MEMORY_SIZE];
+
+byte* memory_start = bytes;
 struct sys_const* sys_consts = (struct sys_const*)bytes;
 struct sys_var* sys_vars = (struct sys_var*)bytes + sizeof(struct sys_const);
-
 byte* real_address(address a) {
-  return bytes + a;
+  return (byte*)a;
 }
+
+
 uint8_t byte_read(address p) {
   return *real_address(p);
 }
