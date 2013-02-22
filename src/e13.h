@@ -43,9 +43,8 @@ struct sys_const {
   address pool_start;
   address pool_end;
 };
-extern struct sys_const* sys_consts;
 
-#define sys_const(name) sys_consts->name
+#define sys_const(name) ((struct sys_const*)memory_start)->name
 #define INBUF_START sys_const(inbuf_start)
 #define INBUF_END sys_const(inbuf_end)
 #define DSTACK_START sys_const(dstack_start)
@@ -69,9 +68,8 @@ struct sys_var {
   address inbuf_in;
   address inbuf_out;
 };
-extern struct sys_var* sys_vars;
 
-#define sys_var(name) sys_vars->name
+#define sys_var(name) ((struct sys_var*)(memory_start + sizeof(struct sys_const)))->name
 #define DS_TOP sys_var(ds_top)
 #define RS_TOP sys_var(rs_top)
 #define DICT_HEAD sys_var(dict_head)

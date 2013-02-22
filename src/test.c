@@ -16,8 +16,6 @@ static int fails = 0;
 byte bytes[MEMORY_SIZE];
 
 byte* memory_start = bytes;
-struct sys_const* sys_consts = (struct sys_const*)bytes;
-struct sys_var* sys_vars = (struct sys_var*)bytes + sizeof(struct sys_const);
 
 void dnext(void) {
   address old_next = DICT_NEXT;

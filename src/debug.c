@@ -5,30 +5,30 @@
 
 void dump_sysconsts() {
   printf("system consts:\n");
-  printf(" inbuf_start=    %*x\n", WORDSIZE*2, sys_consts->inbuf_start);
-  printf(" inbuf_end=      %*x\n", WORDSIZE*2, sys_consts->inbuf_end);
-  printf(" dstack_start=   %*x\n", WORDSIZE*2, sys_consts->dstack_start);
-  printf(" dstack_end=     %*x\n", WORDSIZE*2, sys_consts->dstack_end);
-  printf(" rstack_start=   %*x\n", WORDSIZE*2, sys_consts->rstack_start);
-  printf(" rstack_end=     %*x\n", WORDSIZE*2, sys_consts->rstack_end);
-  printf(" dict_start=     %*x\n", WORDSIZE*2, sys_consts->dict_start);
-  printf(" dict_end=       %*x\n", WORDSIZE*2, sys_consts->dict_end);
-  printf(" scratch_start=  %*x\n", WORDSIZE*2, sys_consts->scratch_start);
-  printf(" scratch_end=    %*x\n", WORDSIZE*2, sys_consts->scratch_end);
-  printf(" pool_start=     %*x\n", WORDSIZE*2, sys_consts->pool_start);
-  printf(" pool_end=       %*x\n", WORDSIZE*2, sys_consts->pool_end);
+  printf(" inbuf_start=    %*x\n", WORDSIZE*2, INBUF_START);
+  printf(" inbuf_end=      %*x\n", WORDSIZE*2, INBUF_END);
+  printf(" dstack_start=   %*x\n", WORDSIZE*2, DSTACK_START);
+  printf(" dstack_end=     %*x\n", WORDSIZE*2, DSTACK_END);
+  printf(" rstack_start=   %*x\n", WORDSIZE*2, RSTACK_START);
+  printf(" rstack_end=     %*x\n", WORDSIZE*2, RSTACK_END);
+  printf(" dict_start=     %*x\n", WORDSIZE*2, DICT_START);
+  printf(" dict_end=       %*x\n", WORDSIZE*2, DICT_END);
+  printf(" scratch_start=  %*x\n", WORDSIZE*2, SCRATCH_START);
+  printf(" scratch_end=    %*x\n", WORDSIZE*2, SCRATCH_END);
+  printf(" pool_start=     %*x\n", WORDSIZE*2, POOL_START);
+  printf(" pool_end=       %*x\n", WORDSIZE*2, POOL_END);
 }
 
 void dump_sysvars() {
   printf("system vars:\n");
-  printf(" ds_top=         %*x\n", WORDSIZE*2, sys_vars->ds_top);
-  printf(" rs_top=         %*x\n", WORDSIZE*2, sys_vars->rs_top);
-  printf(" dict_head=      %*x\n", WORDSIZE*2, sys_vars->dict_head);
-  printf(" dict_next=      %*x\n", WORDSIZE*2, sys_vars->dict_next);
-  printf(" pool_head=      %*x\n", WORDSIZE*2, sys_vars->pool_head);
-  printf(" pool_next=      %*x\n", WORDSIZE*2, sys_vars->pool_next);
-  printf(" inbuf_in=       %*x\n", WORDSIZE*2, sys_vars->inbuf_in);
-  printf(" inbuf_out=      %*x\n", WORDSIZE*2, sys_vars->inbuf_out);
+  printf(" ds_top=         %*x\n", WORDSIZE*2, DS_TOP);
+  printf(" rs_top=         %*x\n", WORDSIZE*2, RS_TOP);
+  printf(" dict_head=      %*x\n", WORDSIZE*2, DICT_HEAD);
+  printf(" dict_next=      %*x\n", WORDSIZE*2, DICT_NEXT);
+  printf(" pool_head=      %*x\n", WORDSIZE*2, POOL_HEAD);
+  printf(" pool_next=      %*x\n", WORDSIZE*2, POOL_NEXT);
+  printf(" inbuf_in=       %*x\n", WORDSIZE*2, INBUF_IN);
+  printf(" inbuf_out=      %*x\n", WORDSIZE*2, INBUF_OUT);
 }
 
 
