@@ -268,13 +268,12 @@ static void pool_ensure() {
 
 static void not_a_number() {
   START
-  byte_write(INBUF_START, 0);
-  fail_unless(0 == number(INBUF_START), "empty string should not be a number");
+  type("");
+  fail_unless(0 == number(INBUF_START, INBUF_IN-INBUF_START), "empty string should not be a number");
   fail_unless(DS_TOP == DSTACK_START, "empty string should not push");
 
-  byte_write(INBUF_START, 'x');
-  byte_write(INBUF_START+1, 0);
-  fail_unless(0 == number(INBUF_START), "'x' should not be a number");
+  type("x");
+  fail_unless(0 == number(INBUF_START, INBUF_IN-INBUF_START), "'x' should not be a number");
   fail_unless(DS_TOP == DSTACK_START, "non-number string should not push");
   END
 }
@@ -282,22 +281,22 @@ static void not_a_number() {
 static void positive_number() {
   START
   type("1");
-  fail_unless(1 == number(INBUF_START), "'1' should be a number");
+  fail_unless(1 == number(INBUF_START, INBUF_IN-INBUF_START), "'1' should be a number");
   fail_unless(DS_TOP != DSTACK_START, "number string should push");
   fail_unless(1 == pop(), "number should be pushed");
 
   type("12");
-  fail_unless(1 == number(INBUF_START), "'12' should be a number");
+  fail_unless(1 == number(INBUF_START, INBUF_IN-INBUF_START), "'12' should be a number");
   fail_unless(DS_TOP != DSTACK_START, "number string should push");
   fail_unless(12 == pop(), "number should be pushed");
 
   type("123");
-  fail_unless(1 == number(INBUF_START), "'123' should be a number");
+  fail_unless(1 == number(INBUF_START, INBUF_IN-INBUF_START), "'123' should be a number");
   fail_unless(DS_TOP != DSTACK_START, "number string should push");
   fail_unless(123 == pop(), "number should be pushed");
 
   type("123p");
-  fail_unless(0 == number(INBUF_START), "'123p' should not be a number");
+  fail_unless(0 == number(INBUF_START, INBUF_IN-INBUF_START), "'123p' should not be a number");
   fail_unless(DS_TOP == DSTACK_START, "non-number string should not push");
   END
 }
@@ -305,16 +304,16 @@ static void positive_number() {
 static void negative_number() {
   START
   type("-");
-  fail_unless(0 == number(INBUF_START), "'-' should not be a number");
+  fail_unless(0 == number(INBUF_START, INBUF_IN-INBUF_START), "'-' should not be a number");
   fail_unless(DS_TOP == DSTACK_START, "non-number string should not push");
 
   type("-2");
-  fail_unless(1 == number(INBUF_START), "'-2' should be a number");
+  fail_unless(1 == number(INBUF_START, INBUF_IN-INBUF_START), "'-2' should be a number");
   fail_unless(DS_TOP != DSTACK_START, "number string should push");
   fail_unless(-2 == pop(), "number should be pushed");
 
   type("-23");
-  fail_unless(1 == number(INBUF_START), "'-23' should be a number");
+  fail_unless(1 == number(INBUF_START, INBUF_IN-INBUF_START), "'-23' should be a number");
   fail_unless(DS_TOP != DSTACK_START, "number string should push");
   fail_unless(-23 == pop(), "number should be pushed");
   END

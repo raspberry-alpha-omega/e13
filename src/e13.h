@@ -134,9 +134,6 @@ address padd(address start);
 // lookup a string in the pool and return its address or NOT_FOUND if not found
 address plup(address start, word length);
 
-// lookup a string in the pool and return its address or add it if not found
-address pens(address start, word length);
-
 // lookup a symbol in the dictionary and return its address or NOT_FOUND if not found
 address dlup(address symbol);
 
@@ -150,9 +147,9 @@ void evaluate_pent(address p);
 /* candidates for re-implementation as compiled words */
 
 // attempt to parse and push a number from a string
-int number(address start);
+int number(address start, int length);
 
-// advance the head of the dictionary after a new top entry has been populated
-void dnext(void);
+// lookup a string in the pool and return its address or add it if not found
+address pens(address start, word length);
 
 #endif

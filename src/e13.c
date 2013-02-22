@@ -145,17 +145,20 @@ void primitive(address p) {
   (*((primfn*)p))();
 }
 
-int number(address start) {
+int number(address start, int length) {
   int negative = 0;
 
   if ('-' == byte_read(start)) {
     negative = 1;
     ++start;
+    --length;
   }
+
+  if (0 == length) return 0;
 
   int n = 0;
 
-  for (int i = 0 ;; ++i) {
+  for (int i = 0 ;i < length; ++i) {
     byte c = byte_read(start+i);
     if (0 == c || ' ' == c) {
       if (0 == i) return 0;
@@ -184,14 +187,14 @@ void eval_word(address p, int length) {
       fn(param);
     }
   } else {
-    number(p);
+    number(p, length);
   }
 }
 
 void evaluate(address p, address next) {
   address start = p;
   address end = start;
-  address scratchp = 0;
+  address scratchp = SCRATCH_START;
 
   int state = OUTSIDE;
   int depth = 0;
