@@ -1,6 +1,3 @@
-#include <stdio.h> // debugging only, remove for final version
-
-#include <stdint.h>
 #include "e13.h"
 
 #include "debug.h"

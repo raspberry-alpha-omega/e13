@@ -1,6 +1,3 @@
-#include <stdio.h> // debugging only, remove for final version
-
-#include <stdint.h>
 #include "e13.h"
 
 int main(void) {
@@ -15,6 +12,4 @@ int main(void) {
 //
 //  type("23 skidoo .");
 //  input();
-
-  return 0;
 }
