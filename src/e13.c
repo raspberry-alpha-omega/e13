@@ -125,7 +125,14 @@ void primitive(address p) {
   (*((primfn*)real_address(p)))();
 }
 
-int natural(int negative, address start) {
+int number(address start) {
+  int negative = 0;
+
+  if ('-' == byte_read(start)) {
+    negative = 1;
+    ++start;
+  }
+
   int n = 0;
 
   for (int i = 0 ;; ++i) {
@@ -144,17 +151,6 @@ int natural(int negative, address start) {
 
   push(negative ? -n : n);
   return 1;
-}
-
-int number(address start) {
-  int negative = 0;
-
-  if ('-' == byte_read(start)) {
-    negative = 1;
-    ++start;
-  }
-
-  return natural(negative, start);
 }
 
 void eval_word(address p, int length) {
