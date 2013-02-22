@@ -84,16 +84,16 @@ extern struct sys_var* sys_vars;
 
 // memory model sizes, adjusting these should be safe, just keep them all on WORDSIZE-byte boundaries
 #define MEMORY_SIZE 65536
-#define SYSTEM_WORDS 20 /* room for the system consts and vars */
+#define CONST_BYTES sizeof(struct sys_const)
+#define VAR_BYTES sizeof(struct sys_var)
 #define INBUF_BYTES 1024
 #define DSTACK_WORDS 256
 #define RSTACK_WORDS 256
 #define DICT_WORDS 256
 #define SCRATCH_BYTES 1024
-#define POOL_BYTES (MEMORY_SIZE - (INBUF_BYTES) - (DICT_WORDS*WORDSIZE) - (RSTACK_WORDS*WORDSIZE) - (DSTACK_WORDS*WORDSIZE) - (SYSTEM_WORDS * WORDSIZE))
+#define POOL_BYTES (MEMORY_SIZE - (INBUF_BYTES) - (DICT_WORDS*WORDSIZE) - (RSTACK_WORDS*WORDSIZE) - (DSTACK_WORDS*WORDSIZE) - CONST_BYTES - VAR_BYTES)
 
 extern byte* memory_start;
-extern byte* soft_start;
 
 // field offsets
 #define DENT_NAME 0

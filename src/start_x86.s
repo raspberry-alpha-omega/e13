@@ -1,19 +1,18 @@
 wordsize = 4
-.globl _start
-.align 8
-_start:
-  call main
-  movl $1, %eax
-  xorl %ebx,%ebx
-  int $0x80
 
+.globl _start
 .globl memory_start
 .globl sys_consts
 .globl sys_vars
 .globl soft_start
+
+_start:
+  call main
+  movl $1, %eax
+  xor %ebx, %ebx
+  int $0x80
+
+.align wordsize
 memory_start:
-sys_consts:
-.space wordsize * 12, 0
-sys_vars:
-.space wordsize * 8, 0
-soft_start:
+sys_consts = memory_start
+sys_vars = sys_consts + wordsize * 12
