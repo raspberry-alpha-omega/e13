@@ -31,17 +31,6 @@ void dadd(address name, address type, word param) {
   dnext();
 }
 
-void padd(char* s, word len) {
-  POOL_HEAD = POOL_NEXT;
-  word_write(POOL_NEXT + PENT_LEN, len);
-  for (int i = 0; i < len; ++i) {
-    byte_write(POOL_NEXT + PENT_DATA + i, s[i]);
-  }
-  address next = POOL_NEXT + PENT_DATA + roundup(len);
-  word_write(POOL_NEXT + PENT_NEXT, next);
-  POOL_NEXT = next;
-}
-
 // set up default entries and initialise variables
 void init() {
   // set "constants"
@@ -71,7 +60,7 @@ void init() {
 
   POOL_NEXT = POOL_START;
   POOL_HEAD = POOL_START;
-  padd("", 0);
+  padd((address)"");
 
   DICT_NEXT = DICT_START;
   dadd(POOL_START, (word)&number, 0);
@@ -168,19 +157,19 @@ static void dict_move_to_next() {
 
 static void dict_lookup() {
   START
-  fail_unless(dlookup(123) == NOT_FOUND, "dict lookup should not find undefined item");
+  fail_unless(dlup(123) == NOT_FOUND, "dict lookup should not find undefined item");
   word_write(DICT_NEXT+DENT_NAME, 123);
   dnext();
-  fail_unless(dlookup(123) == DICT_HEAD, "dict lookup should find item at head");
+  fail_unless(dlup(123) == DICT_HEAD, "dict lookup should find item at head");
 
   address first_match = DICT_HEAD;
   word_write(DICT_NEXT+DENT_NAME, 456);
   dnext();
-  fail_unless(dlookup(123) == first_match, "dict lookup should find item behind head");
+  fail_unless(dlup(123) == first_match, "dict lookup should find item behind head");
 
   word_write(DICT_NEXT+DENT_NAME, 123);
   dnext();
-  fail_unless(dlookup(123) != first_match, "dict lookup should find override");
+  fail_unless(dlup(123) != first_match, "dict lookup should find override");
   END
 }
 
@@ -206,7 +195,7 @@ static void pool_add() {
   address old_head = POOL_HEAD;
   address old_next = POOL_NEXT;
   type("a");
-  address added = badd(INBUF_START);
+  address added = padd(INBUF_START);
   fail_unless(POOL_HEAD == old_next, "pool head should me moved to old next");
   fail_unless(added == POOL_HEAD, "badd should return new address");
   fail_unless(1 == word_read(POOL_HEAD + PENT_LEN), "supplied length should be stored with text");
@@ -218,19 +207,19 @@ static void pool_add() {
 static void pool_lookup_not_found() {
   START
   type("");
-  fail_unless(blookup(INBUF_START, INBUF_IN-INBUF_START) == POOL_START, "pool lookup of empty string should return 0");
+  fail_unless(plup(INBUF_START, INBUF_IN-INBUF_START) == POOL_START, "pool lookup of empty string should return 0");
   type("x");
-  fail_unless(blookup(INBUF_START, INBUF_IN-INBUF_START) == NOT_FOUND, "pool lookup of undefined string should return NOT_FOUND");
+  fail_unless(plup(INBUF_START, INBUF_IN-INBUF_START) == NOT_FOUND, "pool lookup of undefined string should return NOT_FOUND");
   END
 }
 
 static void pool_lookup_found_when_added() {
   START
   type("a");
-  fail_unless(blookup(INBUF_START, INBUF_IN-INBUF_START) == NOT_FOUND, "pool lookup of undefined string should return NOT_FOUND");
+  fail_unless(plup(INBUF_START, INBUF_IN-INBUF_START) == NOT_FOUND, "pool lookup of undefined string should return NOT_FOUND");
 
-  address added = badd(INBUF_START);
-  address found = blookup(INBUF_START, INBUF_IN-INBUF_START);
+  address added = padd(INBUF_START);
+  address found = plup(INBUF_START, INBUF_IN-INBUF_START);
   fail_unless(found == added, "pool lookup of defined string should return its address");
   END
 }
@@ -238,30 +227,42 @@ static void pool_lookup_found_when_added() {
 static void pool_lookup_found_by_length() {
   START
   type("x");
-  fail_unless(blookup(INBUF_START, INBUF_IN-INBUF_START) == NOT_FOUND, "pool lookup of undefined string should return NOT_FOUND");
+  fail_unless(plup(INBUF_START, INBUF_IN-INBUF_START) == NOT_FOUND, "pool lookup of undefined string should return NOT_FOUND");
 
   type("ab");
-  address added1 = badd(INBUF_START);
+  address added1 = padd(INBUF_START);
   type("a");
-  fail_unless(blookup(INBUF_START, INBUF_IN-INBUF_START) == NOT_FOUND, "pool lookup of partial string should return NOT_FOUND");
+  fail_unless(plup(INBUF_START, INBUF_IN-INBUF_START) == NOT_FOUND, "pool lookup of partial string should return NOT_FOUND");
 
-  address added2 = badd(INBUF_START);
-  fail_unless(blookup(INBUF_START, INBUF_IN-INBUF_START) == added2, "pool lookup of defined string should return its address");
+  address added2 = padd(INBUF_START);
+  fail_unless(plup(INBUF_START, INBUF_IN-INBUF_START) == added2, "pool lookup of defined string should return its address");
   END
 }
 
 static void pool_lookup_found_by_content() {
   START
   type("x");
-  fail_unless(blookup(INBUF_START, INBUF_IN-INBUF_START) == NOT_FOUND, "pool lookup of undefined string should return NOT_FOUND");
+  fail_unless(plup(INBUF_START, INBUF_IN-INBUF_START) == NOT_FOUND, "pool lookup of undefined string should return NOT_FOUND");
 
-  address added1 = badd(INBUF_START);
+  address added1 = padd(INBUF_START);
 
   type("y");
-  fail_unless(blookup(INBUF_START, INBUF_IN-INBUF_START) == NOT_FOUND, "pool lookup of partial string should return NOT_FOUND");
+  fail_unless(plup(INBUF_START, INBUF_IN-INBUF_START) == NOT_FOUND, "pool lookup of partial string should return NOT_FOUND");
 
-  address added2 = badd(INBUF_START);
-  fail_unless(blookup(INBUF_START, INBUF_IN-INBUF_START) == added2, "pool lookup of defined string should return its address");
+  address added2 = padd(INBUF_START);
+  fail_unless(plup(INBUF_START, INBUF_IN-INBUF_START) == added2, "pool lookup of defined string should return its address");
+  END
+}
+
+static void pool_ensure() {
+  START
+  type("x");
+  address old_next = POOL_NEXT;
+  address created = pens(INBUF_START, INBUF_IN-INBUF_START);
+  fail_unless(created == old_next, "pool ensure of unknown string should create it");
+  type("x");
+  address found =  pens(INBUF_START, INBUF_IN-INBUF_START);
+  fail_unless(found == created, "pool ensure of created string should find it");
   END
 }
 
@@ -360,7 +361,7 @@ static void eval_string() {
   fail_unless(NOT_FOUND != pushed, "pushed should not be NOT_FOUND");
 
   type("hello");
-  fail_unless(blookup(INBUF_START, INBUF_IN-INBUF_START) == pushed, "string address should have been pushed");
+  fail_unless(plup(INBUF_START, INBUF_IN-INBUF_START) == pushed, "string address should have been pushed");
   fail_unless(DS_TOP == DSTACK_START, "stack should be empty at end, too");
   END
 }
@@ -381,7 +382,7 @@ static void eval_word() {
   fail_unless(DS_TOP == DSTACK_START, "stack should be empty at end, too");
 
   type("hello");
-  address name = badd(INBUF_START);
+  address name = padd(INBUF_START);
   word_write(DICT_NEXT+DENT_NAME, name);
   word_write(DICT_NEXT+DENT_TYPE, (word)&dup);
   word_write(DICT_NEXT+DENT_PARAM, 0);
@@ -397,9 +398,9 @@ static void eval_word() {
 
 void define(const char* names, const char* bodys) {
   type(names);
-  word name = badd(INBUF_START);
+  word name = padd(INBUF_START);
   type(bodys);
-  word body = badd(INBUF_START);
+  word body = padd(INBUF_START);
 
   word_write(DICT_NEXT+DENT_NAME, name);
   word_write(DICT_NEXT+DENT_TYPE, (word)&evaluate_pent);
@@ -450,6 +451,7 @@ int main() {
   test(pool_lookup_found_when_added);
   test(pool_lookup_found_by_length);
   test(pool_lookup_found_by_content);
+  test(pool_ensure);
   test(not_a_number);
   test(positive_number);
   test(negative_number);

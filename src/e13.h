@@ -118,7 +118,6 @@ address rpop();
 
 byte byte_read(address p);
 void byte_write(address p, byte v);
-
 word word_read(address p);
 void word_write(address p, word v);
 
@@ -127,15 +126,19 @@ byte* real_address(address a);
 typedef void (*typefn)(word param);
 typedef void (*primfn)(void);
 
-word roundup(address p);
-
 // data manipulation functions
 
+// add a string to the pool and return its address
+address padd(address start);
+
 // lookup a string in the pool and return its address or NOT_FOUND if not found
-address blookup(address start, word length);
+address plup(address start, word length);
+
+// lookup a string in the pool and return its address or add it if not found
+address pens(address start, word length);
 
 // lookup a symbol in the dictionary and return its address or NOT_FOUND if not found
-address dlookup(address symbol);
+address dlup(address symbol);
 
 // execute a dictionary entry
 void execute(typefn fn, word value);
@@ -144,21 +147,10 @@ void execute(typefn fn, word value);
 void evaluate(address p, word length);
 void evaluate_pent(address p);
 
-// initialise the system variables and initial dict entries
-void init(void);
-
-// run accepting and processing input
-void run(void);
-
-
-
 /* candidates for re-implementation as compiled words */
 
 // attempt to parse and push a number from a string
 int number(address start);
-
-// lookup a string in the pool and return its address or add it if not found
-address badd(address start);
 
 // advance the head of the dictionary after a new top entry has been populated
 void dnext(void);

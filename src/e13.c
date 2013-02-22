@@ -73,7 +73,7 @@ address rpop(void) {
   return word_read(RS_TOP);
 }
 
-address dlookup(address symbol) {
+address dlup(address symbol) {
   address head = DICT_HEAD;
   while (head != 0) {
     if (word_read(head+DENT_NAME) == symbol) {
@@ -92,14 +92,29 @@ word roundup(address p) {
   return p;
 }
 
-int buflen(address buf) {
-  int ret = 0;
-  while (byte_read(buf+ret) != 0)
-    ++ret;
-  return ret;
+address padd(address start) {
+//printf("badd start POOL_HEAD=%d POOL_NEXT=%d\n", POOL_HEAD, POOL_NEXT);
+  address here = POOL_NEXT;
+  int len = 0;
+  for (;; ++len) {
+    uint8_t c = byte_read(start + len);
+    if (0 == c) break;
+    byte_write(here+PENT_DATA + len, c);
+//printf("badd [%s] loop len=%d\n", real_address(start), len);
+  }
+  word next = here + PENT_DATA + roundup(len);
+
+  word_write(here + PENT_LEN, len);
+  word_write(here + PENT_NEXT, next);
+
+  POOL_HEAD = here;
+  POOL_NEXT = next;
+//printf("badd end POOL_HEAD=%d POOL_NEXT=%d\n", POOL_HEAD, POOL_NEXT);
+//dump_pent(POOL_HEAD);
+  return here;
 }
 
-address blookup(address start, word length) {
+address plup(address start, word length) {
   address p = POOL_START;
   while (p < POOL_NEXT) {
     word len = word_read(p);
@@ -119,6 +134,15 @@ address blookup(address start, word length) {
   }
 
   return NOT_FOUND;
+}
+
+address pens(address start, word length) {
+  address ret = plup(start, length);
+  if (NOT_FOUND == ret) {
+    ret = padd(start);
+  }
+
+  return ret;
 }
 
 void primitive(address p) {
@@ -155,9 +179,9 @@ int number(address start) {
 
 void eval_word(address p, int length) {
   address dent = NOT_FOUND;
-  address name = blookup(p, length);
+  address name = plup(p, length);
   if (name != NOT_FOUND) {
-    dent = dlookup(name);
+    dent = dlup(name);
     if (dent != NOT_FOUND) {
       typefn fn = (typefn)word_read(dent+DENT_TYPE);
       word param = word_read(dent+DENT_PARAM);
@@ -166,28 +190,6 @@ void eval_word(address p, int length) {
   } else {
     number(p);
   }
-}
-
-address badd(address start) {
-//printf("badd start POOL_HEAD=%d POOL_NEXT=%d\n", POOL_HEAD, POOL_NEXT);
-  address here = POOL_NEXT;
-  int len = 0;
-  for (;; ++len) {
-    uint8_t c = byte_read(start + len);
-    if (0 == c) break;
-    byte_write(here+PENT_DATA + len, c);
-//printf("badd [%s] loop len=%d\n", real_address(start), len);
-  }
-  word next = here + PENT_DATA + roundup(len);
-
-  word_write(here + PENT_LEN, len);
-  word_write(here + PENT_NEXT, next);
-
-  POOL_HEAD = here;
-  POOL_NEXT = next;
-//printf("badd end POOL_HEAD=%d POOL_NEXT=%d\n", POOL_HEAD, POOL_NEXT);
-//dump_pent(POOL_HEAD);
-  return here;
 }
 
 void evaluate(address p, address next) {
@@ -225,7 +227,7 @@ void evaluate(address p, address next) {
         --depth;
         if (0 == depth) {
           byte_write(scratchp, 0);
-          push(badd(SCRATCH_START));
+          push(pens(SCRATCH_START, scratchp-SCRATCH_START));
           state = OUTSIDE;
         }
       } else {

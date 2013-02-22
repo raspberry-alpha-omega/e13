@@ -4,7 +4,7 @@
 #include "e13.h"
 
 void dadd(address name, address type, word param);
-void padd(char* s, word len);
+void sadd(char* s, word len);
 
 void dump_stack(void);
 void dump_pent_s(address i, word length);
