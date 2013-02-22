@@ -66,7 +66,7 @@ void dump_pool(void) {
 address dump_dent(address i) {
   word param = word_read(i+DENT_PARAM);
   address prev = word_read(i+DENT_PREV);
-  printf(" %d: %d[%s] = %p(%d", i, word_read(i+DENT_NAME), real_address(word_read(i+DENT_NAME)+PENT_DATA), word_read(i+DENT_TYPE), param);
+  printf(" %d: %d[%s] = %p(%d", i, word_read(i+DENT_NAME), (byte*)(word_read(i+DENT_NAME)+PENT_DATA), word_read(i+DENT_TYPE), param);
   if (param >= POOL_START && param < POOL_NEXT) {
     word length = word_read(param + PENT_LEN);
     printf("[");

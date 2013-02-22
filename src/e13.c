@@ -11,16 +11,12 @@ byte bytes[MEMORY_SIZE];
 byte* memory_start = bytes;
 struct sys_const* sys_consts = (struct sys_const*)bytes;
 struct sys_var* sys_vars = (struct sys_var*)bytes + sizeof(struct sys_const);
-byte* real_address(address a) {
-  return (byte*)a;
-}
-
 
 uint8_t byte_read(address p) {
-  return *real_address(p);
+  return *(byte*)p;
 }
 void byte_write(address p, byte v) {
-  *real_address(p) = v;
+  *(byte*)p = v;
 }
 word word_read(address p) {
   word ret = 0;
@@ -146,7 +142,7 @@ address pens(address start, word length) {
 }
 
 void primitive(address p) {
-  (*((primfn*)real_address(p)))();
+  (*((primfn*)p))();
 }
 
 int number(address start) {

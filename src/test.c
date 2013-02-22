@@ -398,9 +398,9 @@ static void eval_word() {
 
 void define(const char* names, const char* bodys) {
   type(names);
-  word name = padd(INBUF_START);
+  word name = pens(INBUF_START, INBUF_IN-INBUF_START);
   type(bodys);
-  word body = padd(INBUF_START);
+  word body = pens(INBUF_START, INBUF_IN-INBUF_START);
 
   word_write(DICT_NEXT+DENT_NAME, name);
   word_write(DICT_NEXT+DENT_TYPE, (word)&evaluate_pent);
