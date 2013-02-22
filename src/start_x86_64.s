@@ -1,4 +1,4 @@
-wordsize = 4
+wordsize = 8
 .globl _start
 .align 8
 _start:

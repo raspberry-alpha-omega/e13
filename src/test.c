@@ -12,6 +12,13 @@ static int fails = 0;
 #define START //printf("%s:start\n", __FUNCTION__);
 #define END //printf("%s:end\n", __FUNCTION__);
 
+// the memory model, simulating basic RAM so that I can get as close to Chuck's original design as possible.
+byte bytes[MEMORY_SIZE];
+
+byte* memory_start = bytes;
+struct sys_const* sys_consts = (struct sys_const*)bytes;
+struct sys_var* sys_vars = (struct sys_var*)bytes + sizeof(struct sys_const);
+byte* soft_start = bytes + sizeof(struct sys_const) + sizeof(struct sys_var);
 
 void dnext(void) {
   address old_next = DICT_NEXT;

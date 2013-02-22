@@ -15,7 +15,7 @@ test_64: src/test.c src/e13.c src/debug.c
 	gcc $(CFLAGS) -m64 -o $@ $^
 	./test_64
 	
-e13_x86_64: src/start_x86.s src/main.c src/e13.c
+e13_x86_64: src/start_x86_64.s src/main.c src/e13.c
 	gcc $(CFLAGS) -m64 -static -nostdlib -ffreestanding -o $@ $^
 	
 clean:

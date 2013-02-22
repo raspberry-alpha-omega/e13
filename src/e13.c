@@ -2,12 +2,7 @@
 
 #include "debug.h"
 
-// the memory model, simulating basic RAM so that I can get as close to Chuck's original design as possible.
-byte memory_start[MEMORY_SIZE];
-
-struct sys_const* sys_consts = (struct sys_const*)memory_start;
-struct sys_var* sys_vars = (struct sys_var*)memory_start + sizeof(struct sys_const);
-
+// memory access functions
 uint8_t byte_read(address p) {
   return *(byte*)p;
 }
@@ -47,7 +42,7 @@ void word_write(address p, word v) {
 #endif
 }
 
-// memory access functions
+// statck functions
 void push(word v) {
   word_write(DS_TOP, v);
   DS_TOP += WORDSIZE;
