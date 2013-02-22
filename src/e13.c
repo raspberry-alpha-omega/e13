@@ -6,11 +6,10 @@
 #include "debug.h"
 
 // the memory model, simulating basic RAM so that I can get as close to Chuck's original design as possible.
-byte bytes[MEMORY_SIZE];
+byte memory_start[MEMORY_SIZE];
 
-byte* memory_start = bytes;
-struct sys_const* sys_consts = (struct sys_const*)bytes;
-struct sys_var* sys_vars = (struct sys_var*)bytes + sizeof(struct sys_const);
+struct sys_const* sys_consts = (struct sys_const*)memory_start;
+struct sys_var* sys_vars = (struct sys_var*)memory_start + sizeof(struct sys_const);
 
 uint8_t byte_read(address p) {
   return *(byte*)p;
