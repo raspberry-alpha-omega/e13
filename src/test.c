@@ -5,17 +5,82 @@
 
 static int fails = 0;
 
-#define fail_if(expr, message) if (_fail_if(__FUNCTION__, __LINE__, expr, message)) return
-#define fail_unless(expr, message) fail_if(!(expr), message)
-#define fail(message) fail_if(0, message)
+int _fail_if(const char* fn, int line, int expr, const char* message) {
+  if (expr) {
+    printf("%s:%d %s\n", fn, line, message);
+    ++fails;
+    return 1;
+  }
 
-#define START //printf("%s:start\n", __FUNCTION__);
-#define END //printf("%s:end\n", __FUNCTION__);
+  return 0;
+}
+
+#define fail_if(expr, message) if (_fail_if(__FUNCTION__, __LINE__, expr, message)) return
+#define complain(message) _fail_if(__FUNCTION__, __LINE__, 1, message)
+#define fail_unless(expr, message) fail_if(!(expr), message)
+#define fail(message) fail_if(1, message)
+
+#define START printf("%s:start\n", __FUNCTION__);
+#define END printf("%s:end\n", __FUNCTION__);
 
 // the memory model, simulating basic RAM so that I can get as close to Chuck's original design as possible.
 byte bytes[MEMORY_SIZE];
 
 byte* memory_start = bytes;
+
+// memory access functions, with extra protection for tests
+uint8_t _byte_read(address p, const char* f, int r) {
+  if (p < (word)bytes || p >= (word)(bytes + MEMORY_SIZE)) {
+    printf("attempt to read byte outside memory map[%lx-%lx] (p=%lx) fn=[%s] line=%d\n", bytes, bytes + MEMORY_SIZE, (word)p, f, r);
+    return 0;
+  }
+  return *(byte*)p;
+}
+void _byte_write(address p, byte v, const char* f, int r) {
+  if (p < (word)bytes || p >= (word)(bytes + MEMORY_SIZE)) {
+    complain("attempt to write byte outside memory map");
+  }
+  *(byte*)p = v;
+}
+word _word_read(address p, const char* f, int r) {
+  if (p < (word)bytes || p >= (word)(bytes + MEMORY_SIZE)) {
+    complain("attempt to read word outside memory map");
+    return 0;
+  }
+  word ret = 0;
+  ret += ((word)byte_read(p+0));
+  ret += ((word)byte_read(p+1))<<8;
+#if WORDSIZE > 2
+  ret += ((word)byte_read(p+2))<<16;
+  ret += ((word)byte_read(p+3))<<24;
+#if WORDSIZE > 4
+  ret += ((word)byte_read(p+4))<<32;
+  ret += ((word)byte_read(p+5))<<40;
+  ret += ((word)byte_read(p+6))<<48;
+  ret += ((word)byte_read(p+7))<<56;
+#endif
+#endif
+//printf("word_read(p=%d)=>%d\n", p, ret);
+  return ret;
+}
+void _word_write(address p, word v, const char* f, int r) {
+  if (p < (word)bytes || p >= (word)(bytes + MEMORY_SIZE)) {
+    complain("attempt to write word outside memory map");
+  }
+//printf("word_write(p=%d,v=%d)\n", p, v);
+  byte_write(p+0, (v & 0x00FF));
+  byte_write(p+1, (v & 0xFF00) >> 8);
+#if WORDSIZE > 2
+  byte_write(p+2, (v & 0x00FF0000) >> 16);
+  byte_write(p+3, (v & 0xFF000000) >> 24);
+#if WORDSIZE > 4
+  byte_write(p+4, (v & 0x000000FF00000000) >> 32);
+  byte_write(p+5, (v & 0x0000FF0000000000) >> 40);
+  byte_write(p+6, (v & 0x00FF000000000000) >> 48);
+  byte_write(p+7, (v & 0xFF00000000000000) >> 56);
+#endif
+#endif
+}
 
 void dnext(void) {
   address old_next = DICT_NEXT;
@@ -28,9 +93,19 @@ void dnext(void) {
   word_write(DICT_NEXT+DENT_PREV, old_next);
 }
 
-void dadd(address name, address type, word param) {
-  word_write(DICT_NEXT+DENT_NAME, name);
-  word_write(DICT_NEXT+DENT_TYPE, type);
+void type(const char* s) {
+  INBUF_IN = INBUF_START;
+  for (int i = 0; s[i] != 0; ++i) {
+    byte_write(INBUF_IN++, s[i]);
+  }
+  byte_write(INBUF_IN, 0);
+}
+
+void dadd(const char* name, address typefn, word param) {
+  type(name);
+printf("dadd: INBUF_START=%x, INBUF_IN=%x, length=%d\n", INBUF_START, INBUF_IN, INBUF_IN-INBUF_START);
+  word_write(DICT_NEXT+DENT_NAME, pens(INBUF_START, INBUF_IN-INBUF_START));
+  word_write(DICT_NEXT+DENT_TYPE, typefn);
   word_write(DICT_NEXT+DENT_PARAM, param);
   dnext();
 }
@@ -64,21 +139,11 @@ void init() {
 
   POOL_NEXT = POOL_START;
   POOL_HEAD = POOL_START;
-  padd((address)"");
 
   DICT_NEXT = DICT_START;
-  dadd(POOL_START, (word)&number, 0);
+  dadd("", (word)&number, 0);
 
   RS_TOP = RSTACK_START;
-}
-
-
-void type(const char* s) {
-  INBUF_IN = INBUF_START;
-  for (int i = 0; s[i] != 0; ++i) {
-    byte_write(INBUF_IN++, s[i]);
-  }
-  byte_write(INBUF_IN, 0);
 }
 
 void evaluate_INBUF(void) {
@@ -88,16 +153,6 @@ void evaluate_INBUF(void) {
 void enter(const char* s) {
   type(s);
   evaluate_INBUF();
-}
-
-int _fail_if(const char* fn, int line, int expr, const char* message) {
-  if (expr) {
-    printf("%s:%d %s\n", fn, line, message);
-    ++fails;
-    return 1;
-  }
-
-  return 0;
 }
 
 static void data_stack() {
@@ -199,7 +254,7 @@ static void pool_add() {
   address old_head = POOL_HEAD;
   address old_next = POOL_NEXT;
   type("a");
-  address added = padd(INBUF_START);
+  address added = padd(INBUF_START, INBUF_IN-INBUF_START);
   fail_unless(POOL_HEAD == old_next, "pool head should me moved to old next");
   fail_unless(added == POOL_HEAD, "badd should return new address");
   fail_unless(1 == word_read(POOL_HEAD + PENT_LEN), "supplied length should be stored with text");
@@ -222,7 +277,7 @@ static void pool_lookup_found_when_added() {
   type("a");
   fail_unless(plup(INBUF_START, INBUF_IN-INBUF_START) == NOT_FOUND, "pool lookup of undefined string should return NOT_FOUND");
 
-  address added = padd(INBUF_START);
+  address added = padd(INBUF_START, INBUF_IN-INBUF_START);
   address found = plup(INBUF_START, INBUF_IN-INBUF_START);
   fail_unless(found == added, "pool lookup of defined string should return its address");
   END
@@ -234,11 +289,11 @@ static void pool_lookup_found_by_length() {
   fail_unless(plup(INBUF_START, INBUF_IN-INBUF_START) == NOT_FOUND, "pool lookup of undefined string should return NOT_FOUND");
 
   type("ab");
-  address added1 = padd(INBUF_START);
+  address added1 = padd(INBUF_START, INBUF_IN-INBUF_START);
   type("a");
   fail_unless(plup(INBUF_START, INBUF_IN-INBUF_START) == NOT_FOUND, "pool lookup of partial string should return NOT_FOUND");
 
-  address added2 = padd(INBUF_START);
+  address added2 = padd(INBUF_START, INBUF_IN-INBUF_START);
   fail_unless(plup(INBUF_START, INBUF_IN-INBUF_START) == added2, "pool lookup of defined string should return its address");
   END
 }
@@ -248,12 +303,12 @@ static void pool_lookup_found_by_content() {
   type("x");
   fail_unless(plup(INBUF_START, INBUF_IN-INBUF_START) == NOT_FOUND, "pool lookup of undefined string should return NOT_FOUND");
 
-  address added1 = padd(INBUF_START);
+  address added1 = padd(INBUF_START, INBUF_IN-INBUF_START);
 
   type("y");
   fail_unless(plup(INBUF_START, INBUF_IN-INBUF_START) == NOT_FOUND, "pool lookup of partial string should return NOT_FOUND");
 
-  address added2 = padd(INBUF_START);
+  address added2 = padd(INBUF_START, INBUF_IN-INBUF_START);
   fail_unless(plup(INBUF_START, INBUF_IN-INBUF_START) == added2, "pool lookup of defined string should return its address");
   END
 }
@@ -385,7 +440,7 @@ static void eval_word() {
   fail_unless(DS_TOP == DSTACK_START, "stack should be empty at end, too");
 
   type("hello");
-  address name = padd(INBUF_START);
+  address name = padd(INBUF_START, INBUF_IN-INBUF_START);
   word_write(DICT_NEXT+DENT_NAME, name);
   word_write(DICT_NEXT+DENT_TYPE, (word)&dup);
   word_write(DICT_NEXT+DENT_PARAM, 0);
@@ -432,6 +487,59 @@ static void eval_subroutine() {
   END
 }
 
+void primitive(address p) {
+printf("%s:enter\n", __FUNCTION__);
+  (*((primfn*)p))();
+printf("%s:exit\n", __FUNCTION__);
+}
+
+void prim_b_plus() {
+printf("%s:enter\n", __FUNCTION__);
+  push(pop() + (word)1);
+printf("%s:exit\n", __FUNCTION__);
+}
+
+void prim_w_plus() {
+  push(pop() + WORDSIZE);
+}
+
+void prim_b_read() {
+  push(byte_read(pop()));
+}
+
+void prim_b_write() {
+  byte_write(pop(), pop());
+}
+
+void prim_w_read() {
+  push(word_read(pop()));
+}
+
+void prim_w_write() {
+  word_write(pop(), pop());
+}
+
+static void eval_prims() {
+  START
+  fail_unless(DS_TOP == DSTACK_START, "stack should be empty at start");
+
+  dadd("B+", (address)&primitive, (address)&prim_b_plus);
+//  dadd("W+", (address)&primitive, (address)&prim_w_plus);
+//  dadd("B@", (address)&primitive, (address)&prim_b_read);
+//  dadd("B!", (address)&primitive, (address)&prim_b_write);
+//  dadd("W@", (address)&primitive, (address)&prim_w_read);
+//  dadd("W!", (address)&primitive, (address)&prim_w_write);
+dump_dict();
+
+printf("%s:after dadd\n", __FUNCTION__);
+
+  enter("96 B+");
+printf("%s:after enter\n", __FUNCTION__);
+  fail_unless(DS_TOP > DSTACK_START, "stack should not be empty at end");
+  fail_unless(97 == pop(), "parameter value 96 should have been pushed once");
+  fail_unless(DS_TOP == DSTACK_START, "stack should be empty at end, too");
+}
+
 int reset() {
   //  printf("*"); fflush(stdout);
   init();
@@ -443,28 +551,28 @@ int reset() {
 int main() {
   printf("running tests with WORDSIZE [%d]\n", WORDSIZE);
 
-  test(data_stack);
-  test(return_stack);
-  test(dict_read_write);
-  test(dict_move_to_next);
-  test(dict_lookup);
-  test(pool_read_write);
-  test(pool_add);
-  test(pool_lookup_not_found);
-  test(pool_lookup_found_when_added);
-  test(pool_lookup_found_by_length);
-  test(pool_lookup_found_by_content);
-  test(pool_ensure);
-  test(not_a_number);
-  test(positive_number);
-  test(negative_number);
-  test(eval_empty);
-  test(eval_number);
-  test(eval_two_numbers);
-  test(eval_string);
-  test(eval_word);
-  test(eval_subroutine);
-
+//  test(data_stack);
+//  test(return_stack);
+//  test(dict_read_write);
+//  test(dict_move_to_next);
+//  test(dict_lookup);
+//  test(pool_read_write);
+//  test(pool_add);
+//  test(pool_lookup_not_found);
+//  test(pool_lookup_found_when_added);
+//  test(pool_lookup_found_by_length);
+//  test(pool_lookup_found_by_content);
+//  test(pool_ensure);
+//  test(not_a_number);
+//  test(positive_number);
+//  test(negative_number);
+//  test(eval_empty);
+//  test(eval_number);
+//  test(eval_two_numbers);
+//  test(eval_string);
+//  test(eval_word);
+//  test(eval_subroutine);
+  test(eval_prims);
 
   if (fails) {
     printf("%d tests failed\n", fails);

@@ -1,46 +1,8 @@
 #include "e13.h"
 
+#if TEST
 #include "debug.h"
-
-// memory access functions
-uint8_t byte_read(address p) {
-  return *(byte*)p;
-}
-void byte_write(address p, byte v) {
-  *(byte*)p = v;
-}
-word word_read(address p) {
-  word ret = 0;
-  ret += ((word)byte_read(p+0));
-  ret += ((word)byte_read(p+1))<<8;
-#if WORDSIZE > 2
-  ret += ((word)byte_read(p+2))<<16;
-  ret += ((word)byte_read(p+3))<<24;
-#if WORDSIZE > 4
-  ret += ((word)byte_read(p+4))<<32;
-  ret += ((word)byte_read(p+5))<<40;
-  ret += ((word)byte_read(p+6))<<48;
-  ret += ((word)byte_read(p+7))<<56;
 #endif
-#endif
-//printf("word_read(p=%d)=>%d\n", p, ret);
-  return ret;
-}
-void word_write(address p, word v) {
-//printf("word_write(p=%d,v=%d)\n", p, v);
-  byte_write(p+0, (v & 0x00FF));
-  byte_write(p+1, (v & 0xFF00) >> 8);
-#if WORDSIZE > 2
-  byte_write(p+2, (v & 0x00FF0000) >> 16);
-  byte_write(p+3, (v & 0xFF000000) >> 24);
-#if WORDSIZE > 4
-  byte_write(p+4, (v & 0x000000FF00000000) >> 32);
-  byte_write(p+5, (v & 0x0000FF0000000000) >> 40);
-  byte_write(p+6, (v & 0x00FF000000000000) >> 48);
-  byte_write(p+7, (v & 0xFF00000000000000) >> 56);
-#endif
-#endif
-}
 
 // statck functions
 void push(word v) {
@@ -79,14 +41,13 @@ word roundup(address p) {
   return p;
 }
 
-address padd(address start) {
+address padd(address start, word len) {
 //printf("badd start POOL_HEAD=%d POOL_NEXT=%d\n", POOL_HEAD, POOL_NEXT);
   address here = POOL_NEXT;
-  int len = 0;
-  for (;; ++len) {
-    uint8_t c = byte_read(start + len);
+  for (int i = 0; i < len; ++i) {
+    uint8_t c = byte_read(start + i);
     if (0 == c) break;
-    byte_write(here+PENT_DATA + len, c);
+    byte_write(here+PENT_DATA + i, c);
 //printf("badd [%s] loop len=%d\n", real_address(start), len);
   }
   word next = here + PENT_DATA + roundup(len);
@@ -126,14 +87,10 @@ address plup(address start, word length) {
 address pens(address start, word length) {
   address ret = plup(start, length);
   if (NOT_FOUND == ret) {
-    ret = padd(start);
+    ret = padd(start, length);
   }
 
   return ret;
-}
-
-void primitive(address p) {
-  (*((primfn*)p))();
 }
 
 int number(address start, int length) {

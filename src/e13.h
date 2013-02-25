@@ -119,11 +119,6 @@ word pop();
 void rpush(address v);
 address rpop();
 
-byte byte_read(address p);
-void byte_write(address p, byte v);
-word word_read(address p);
-void word_write(address p, word v);
-
 byte* real_address(address a);
 
 typedef void (*typefn)(word param);
@@ -132,7 +127,7 @@ typedef void (*primfn)(void);
 // data manipulation functions
 
 // add a string to the pool and return its address
-address padd(address start);
+address padd(address start, word length);
 
 // lookup a string in the pool and return its address or NOT_FOUND if not found
 address plup(address start, word length);
@@ -154,5 +149,22 @@ int number(address start, int length);
 
 // lookup a string in the pool and return its address or add it if not found
 address pens(address start, word length);
+
+#if TEST
+#define byte_read(p) _byte_read(p, __FUNCTION__, __LINE__)
+#define byte_write(p,v) _byte_write(p, v, __FUNCTION__, __LINE__)
+#define word_read(p) _word_read(p, __FUNCTION__, __LINE__)
+#define word_write(p,v) _word_write(p, v, __FUNCTION__, __LINE__)
+
+byte _byte_read(address p, const char* f, int r);
+void _byte_write(address p, byte v, const char* f, int r);
+word _word_read(address p, const char* f, int r);
+void _word_write(address p, word v, const char* f, int r);
+#else
+byte byte_read(address p);
+void byte_write(address p, byte v);
+word word_read(address p);
+void word_write(address p, word v);
+#endif
 
 #endif
