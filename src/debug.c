@@ -70,7 +70,7 @@ address dump_dent(address i) {
   if (param >= POOL_START && param < POOL_NEXT) {
     word length = word_read(param + PENT_LEN);
     printf("[");
-    dump_pent_s(param, length);
+    if (length > 0) dump_pent_s(param, length);
     printf("]");
   }
   printf(") %d\n", prev);
@@ -79,7 +79,7 @@ address dump_dent(address i) {
 
 void dump_dict() {
   printf("dict[\n");
-  for (int i = DICT_HEAD; i >= DICT_START; ) {
+  for (int i = DICT_HEAD; i > DICT_START; ) {
     i = dump_dent(i);
   }
   printf("]\n");

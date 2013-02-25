@@ -488,8 +488,9 @@ static void eval_subroutine() {
 }
 
 void primitive(address p) {
-printf("%s:enter\n", __FUNCTION__);
-  (*((primfn*)p))();
+printf("%s:enter p=%x\n", __FUNCTION__, p);
+  primfn f = (primfn)p;
+  f();
 printf("%s:exit\n", __FUNCTION__);
 }
 
