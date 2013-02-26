@@ -2,7 +2,7 @@ wordsize = 4
 
 .globl _start
 .globl memory_start
-.extern main
+.extern "C" main
 
 .text
 _start:

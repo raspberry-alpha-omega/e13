@@ -82,6 +82,44 @@ void _word_write(address p, word v, const char* f, int r) {
 #endif
 }
 
+void primitive(address p) {
+  ((primfn)p)();
+}
+
+void literal(address p) {
+  push(p);
+}
+
+void prim_b_plus() {
+  push(pop() + (word)1);
+}
+
+void prim_w_plus() {
+  push(pop() + WORDSIZE);
+}
+
+void prim_b_read() {
+  push(byte_read(pop()));
+}
+
+void prim_b_write() {
+  byte_write(pop(), pop());
+}
+
+void prim_w_read() {
+  push(word_read(pop()));
+}
+
+void prim_w_write() {
+  word_write(pop(), pop());
+}
+
+void dup(void) {
+  word x = pop();
+  push(x);
+  push(x);
+}
+
 void dnext(void) {
   address old_next = DICT_NEXT;
   DICT_HEAD = old_next;
@@ -424,12 +462,6 @@ static void eval_string() {
   END
 }
 
-void dup(word param) {
-  word x = pop();
-  push(x);
-  push(x);
-}
-
 static void eval_word() {
   START
   fail_unless(DS_TOP == DSTACK_START, "stack should be empty at start");
@@ -442,8 +474,8 @@ static void eval_word() {
   type("hello");
   address name = padd(INBUF_START, INBUF_IN-INBUF_START);
   word_write(DICT_NEXT+DENT_NAME, name);
-  word_write(DICT_NEXT+DENT_TYPE, (word)&dup);
-  word_write(DICT_NEXT+DENT_PARAM, 0);
+  word_write(DICT_NEXT+DENT_TYPE, (word)&primitive);
+  word_write(DICT_NEXT+DENT_PARAM, (word)&dup);
   dnext();
 
   enter("96 hello");
@@ -487,33 +519,6 @@ static void eval_subroutine() {
   END
 }
 
-void primitive(address p) {
-  ((primfn)p)();
-}
-
-void prim_b_plus() {
-  push(pop() + (word)1);
-}
-
-void prim_w_plus() {
-  push(pop() + WORDSIZE);
-}
-
-void prim_b_read() {
-  push(byte_read(pop()));
-}
-
-void prim_b_write() {
-  byte_write(pop(), pop());
-}
-
-void prim_w_read() {
-  push(word_read(pop()));
-}
-
-void prim_w_write() {
-  word_write(pop(), pop());
-}
 
 static void eval_prims() {
   START
