@@ -2,6 +2,7 @@
 
 #include "e13.h"
 #include "debug.h"
+int tracing = 0;
 
 static int fails = 0;
 
@@ -16,7 +17,7 @@ int _fail_if(const char* fn, int line, int expr, const char* message) {
 }
 
 #define fail_if(expr, message) if (_fail_if(__FUNCTION__, __LINE__, expr, message)) return
-#define complain(message) _fail_if(__FUNCTION__, __LINE__, 1, message)
+#define complain(message) _fail_if(__FUNCTION__, __LINE__, 1, message);
 #define fail_unless(expr, message) fail_if(!(expr), message)
 #define fail(message) fail_if(1, message)
 
@@ -41,6 +42,7 @@ void _byte_write(address p, byte v, const char* f, int r) {
   if (p < (word)bytes || p >= (word)(bytes + MEMORY_SIZE)) {
     printf("attempt to write byte outside memory map[%08x-%08x] (p=%08x) (v=%08x) fn=[%s] line=%d\n", bytes, bytes + MEMORY_SIZE, p, v, f, r);
     complain("attempt to write byte outside memory map");
+    return;
   }
   *(byte*)p = v;
 }
@@ -70,6 +72,7 @@ void _word_write(address p, word v, const char* f, int r) {
   if (p < (word)bytes || p >= (word)(bytes + MEMORY_SIZE)) {
     printf("attempt to write word outside memory map[%08x-%08x] (p=%08x) (v=%08x) fn=[%s] line=%d\n", bytes, bytes + MEMORY_SIZE, p, v, f, r);
     complain("attempt to write word outside memory map");
+    return;
   }
 //printf("word_write(p=%d,v=%d)\n", p, v);
   byte_write(p+0, (v & 0x00FF));
@@ -114,6 +117,10 @@ void prim_w_write() {
   word_write(p, v);
 }
 
+void dict_offset(word offset) {
+  push(DICT_NEXT + offset);
+}
+
 void dup(void) {
   word x = pop();
   push(x);
@@ -141,14 +148,14 @@ void type(const char* s) {
   byte_write(INBUF_IN, 0);
 }
 
-void dadd(const char* name, void (*typefn)(address), word param) {
-  type(name);
-//printf("dadd: INBUF_START=%x, INBUF_IN=%x, length=%d\n", INBUF_START, INBUF_IN, INBUF_IN-INBUF_START);
-  word_write(DICT_NEXT+DENT_NAME, pens(INBUF_START, INBUF_IN-INBUF_START));
-  word_write(DICT_NEXT+DENT_TYPE, (address)typefn);
-  word_write(DICT_NEXT+DENT_PARAM, param);
-  dent_next();
-}
+#define DADD(name, nlen, type, param) \
+  word_write(DICT_NEXT+DENT_NAME, padd((address)name, nlen)); \
+  word_write(DICT_NEXT+DENT_TYPE, (address)type); \
+  word_write(DICT_NEXT+DENT_PARAM, (word)param); \
+  dent_next(); \
+
+#define DEF(name, nlen, body, blen) \
+  DADD(name, nlen, &defined, padd((address)body, blen))
 
 // set up default entries and initialise variables
 void init() {
@@ -176,6 +183,7 @@ void init() {
   INBUF_OUT = INBUF_START;
 
   DS_TOP = DSTACK_START;
+  RS_TOP = RSTACK_START;
 
   POOL_NEXT = POOL_START;
   POOL_HEAD = POOL_START;
@@ -185,7 +193,24 @@ void init() {
   DICT_NEXT = DICT_START;
   dent_blank();
 
-  RS_TOP = RSTACK_START;
+  DADD("@", 1, &primitive, &prim_w_read)
+  DADD("!", 1, &primitive, &prim_w_write)
+  DADD("W+", 2, &primitive, &prim_w_plus)
+
+  DADD("DICT_HEAD", 9, &literal, &DICT_HEAD);
+  DADD("DICT_NEXT", 9, &literal, &DICT_NEXT);
+  DADD("DEF_FN", 6, &literal, &defined);
+
+  DADD("DENT_NAME", 9, &dict_offset, DENT_NAME);
+  DADD("DENT_TYPE", 9, &dict_offset, DENT_TYPE);
+  DADD("DENT_PARAM", 10, &dict_offset, DENT_PARAM);
+  DADD("DENT_PREV", 9, &dict_offset, DENT_PREV);
+
+  DEF("dent_set", 8, "DEF_FN DENT_TYPE ! DENT_NAME ! DENT_PARAM !", 43);
+  DEF("dent+", 5, "W+ W+ W+ W+", 11);
+  DEF("dent_next", 9, "DICT_NEXT @ DICT_HEAD ! DICT_NEXT @ dent+ DICT_NEXT !", 53);
+  DEF("dent_blank", 10, "DICT_HEAD @ DENT_PREV ! 0 DENT_NAME ! 0 DENT_TYPE ! 0 DENT_PARAM !", 66);
+  DEF("def", 3, "dent_set dent_next dent_blank", 29);
 }
 
 void evaluate_INBUF(void) {
@@ -491,10 +516,10 @@ static void eval_word() {
 }
 
 void define(const char* names, const char* bodys) {
-  type(names);
-  word name = pens(INBUF_START, INBUF_IN-INBUF_START);
   type(bodys);
   word body = pens(INBUF_START, INBUF_IN-INBUF_START);
+  type(names);
+  word name = pens(INBUF_START, INBUF_IN-INBUF_START);
 
   word_write(DICT_NEXT+DENT_NAME, name);
   word_write(DICT_NEXT+DENT_TYPE, (word)&defined);
@@ -523,53 +548,26 @@ static void eval_subroutine() {
   END
 }
 
-
-void dict_offset(word offset) {
-  push(DICT_NEXT + offset);
-}
-
-static void eval_prims() {
+static void eval_prim_w_plus() {
   START
   fail_unless(DS_TOP == DSTACK_START, "stack should be empty at start");
-
-  dadd("B+", &primitive, (address)&prim_b_plus);
-  dadd("W+", &primitive, (address)&prim_w_plus);
-  dadd("B@", &primitive, (address)&prim_b_read);
-  dadd("B!", &primitive, (address)&prim_b_write);
-  dadd("@", &primitive, (address)&prim_w_read);
-  dadd("!", &primitive, (address)&prim_w_write);
-
-  dadd("DICT_HEAD", &literal, (word)&DICT_HEAD);
-  dadd("DICT_NEXT", &literal, (word)&DICT_NEXT);
-  dadd("DEF_FN", &literal, (word)&defined);
-
-  dadd("DENT_NAME", &dict_offset, DENT_NAME);
-  dadd("DENT_TYPE", &dict_offset, DENT_TYPE);
-  dadd("DENT_PARAM", &dict_offset, DENT_PARAM);
-  dadd("DENT_PREV", &dict_offset, DENT_PREV);
-
-  define("dent_set", "DEF_FN DENT_TYPE ! DENT_NAME ! DENT_PARAM !");
-  define("dent+", "W+ W+ W+ W+");
-  define("dent_next", "DICT_NEXT @ DICT_HEAD ! DICT_NEXT @ dent+ DICT_NEXT !");
-  define("dent_blank", "DICT_HEAD @ DENT_PREV ! 0 DENT_NAME ! 0 DENT_TYPE ! 0 DENT_PARAM ! ");
-  define("def", "dent_set dent_next dent_blank");
-
-  enter("96 B+");
-  fail_unless(DS_TOP > DSTACK_START, "stack should not be empty at end");
-  fail_unless(97 == pop(), "parameter value 96 should have been incremented by one");
-  fail_unless(DS_TOP == DSTACK_START, "stack should be empty at end, too");
 
   enter("96 W+");
   fail_unless(DS_TOP > DSTACK_START, "stack should not be empty at end");
   fail_unless(96 + WORDSIZE == pop(), "parameter value 96 should have been incremented by WORDSIZE");
   fail_unless(DS_TOP == DSTACK_START, "stack should be empty at end, too");
+}
 
-  enter("[123 B+] [ugh] def");
+static void eval_def() {
+  START
+  fail_unless(DS_TOP == DSTACK_START, "stack should be empty at start");
+
+  enter("[123 W+] [ugh] def");
   fail_unless(DS_TOP == DSTACK_START, "stack should be empty after defining a new word");
 
   enter("ugh");
   fail_unless(DS_TOP > DSTACK_START, "stack should not be empty at end");
-  fail_unless(124 == pop(), "parameter value from definition should have been pushed");
+  fail_unless(123 + WORDSIZE == pop(), "parameter value from definition should have been pushed");
   fail_unless(DS_TOP == DSTACK_START, "stack should be empty at end, too");
 }
 
@@ -605,7 +603,8 @@ int main() {
   test(eval_string);
   test(eval_word);
   test(eval_subroutine);
-  test(eval_prims);
+  test(eval_prim_w_plus);
+  test(eval_def);
 
   if (fails) {
     printf("%d tests failed\n", fails);

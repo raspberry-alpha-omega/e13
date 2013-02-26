@@ -170,5 +170,6 @@ void word_write(address p, word v);
 void primitive(address p);
 void literal(address p);
 void defined(address p);
+void dict_offset(address p);
 
 #endif

@@ -2,6 +2,7 @@
 
 #if TEST
 #include "debug.h"
+#include <stdio.h>
 #endif
 
 // statck functions
@@ -26,7 +27,7 @@ address dlup(address symbol) {
   address head = DICT_HEAD;
   while (head != 0) {
     if (word_read(head+DENT_NAME) == symbol) {
-      return head;
+          return head;
     }
     head = word_read(head+DENT_PREV);
   }
@@ -45,7 +46,8 @@ address padd(address start, word len) {
 //printf("badd start POOL_HEAD=%d POOL_NEXT=%d\n", POOL_HEAD, POOL_NEXT);
   address here = POOL_NEXT;
   for (int i = 0; i < len; ++i) {
-    uint8_t c = byte_read(start + i);
+//    uint8_t c = byte_read(start + i);
+    uint8_t c = ((byte*)start)[i];
     if (0 == c) break;
     byte_write(here+PENT_DATA + i, c);
 //printf("badd [%s] loop len=%d\n", real_address(start), len);
@@ -75,7 +77,7 @@ address plup(address start, word length) {
         if (requested != found) break;
       }
       if (i == length) {
-        return p;
+              return p;
       }
     }
     p = word_read(p + PENT_NEXT);
@@ -113,7 +115,7 @@ int number(address start, int length) {
       break;
     }
     if (c < '0' || c > '9') {
-      return 0;
+          return 0;
     } else {
       n *= 10;
       n += (c-'0');
@@ -133,6 +135,12 @@ void eval_word(address p, int length) {
       typefn fn = (typefn)word_read(dent+DENT_TYPE);
       word param = word_read(dent+DENT_PARAM);
       fn(param);
+    } else {
+#if TEST
+      printf("unknown word [");
+      for (int i = 0; i < length; ++i) putchar(byte_read(p+i));
+      printf("]\n");
+#endif
     }
   } else {
     number(p, length);

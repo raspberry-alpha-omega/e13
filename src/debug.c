@@ -84,6 +84,7 @@ const char* typename(address type) {
   if (p == defined) return "def";
   if (p == primitive) return "prim";
   if (p == literal) return "lit";
+  if (p == dict_offset) return "dict";
   sprintf(namebuf, "%08x", type);
   return namebuf;
 }
