@@ -20,8 +20,8 @@ int _fail_if(const char* fn, int line, int expr, const char* message) {
 #define fail_unless(expr, message) fail_if(!(expr), message)
 #define fail(message) fail_if(1, message)
 
-#define START printf("%s:start\n", __FUNCTION__);
-#define END printf("%s:end\n", __FUNCTION__);
+#define START //printf("%s:start\n", __FUNCTION__);
+#define END //printf("%s:end\n", __FUNCTION__);
 
 // the memory model, simulating basic RAM so that I can get as close to Chuck's original design as possible.
 byte bytes[MEMORY_SIZE];
@@ -103,7 +103,7 @@ void type(const char* s) {
 
 void dadd(const char* name, address typefn, word param) {
   type(name);
-printf("dadd: INBUF_START=%x, INBUF_IN=%x, length=%d\n", INBUF_START, INBUF_IN, INBUF_IN-INBUF_START);
+//printf("dadd: INBUF_START=%x, INBUF_IN=%x, length=%d\n", INBUF_START, INBUF_IN, INBUF_IN-INBUF_START);
   word_write(DICT_NEXT+DENT_NAME, pens(INBUF_START, INBUF_IN-INBUF_START));
   word_write(DICT_NEXT+DENT_TYPE, typefn);
   word_write(DICT_NEXT+DENT_PARAM, param);
@@ -488,16 +488,11 @@ static void eval_subroutine() {
 }
 
 void primitive(address p) {
-printf("%s:enter p=%x\n", __FUNCTION__, p);
-  primfn f = (primfn)p;
-  f();
-printf("%s:exit\n", __FUNCTION__);
+  ((primfn)p)();
 }
 
 void prim_b_plus() {
-printf("%s:enter\n", __FUNCTION__);
   push(pop() + (word)1);
-printf("%s:exit\n", __FUNCTION__);
 }
 
 void prim_w_plus() {
@@ -525,19 +520,21 @@ static void eval_prims() {
   fail_unless(DS_TOP == DSTACK_START, "stack should be empty at start");
 
   dadd("B+", (address)&primitive, (address)&prim_b_plus);
-//  dadd("W+", (address)&primitive, (address)&prim_w_plus);
-//  dadd("B@", (address)&primitive, (address)&prim_b_read);
-//  dadd("B!", (address)&primitive, (address)&prim_b_write);
-//  dadd("W@", (address)&primitive, (address)&prim_w_read);
-//  dadd("W!", (address)&primitive, (address)&prim_w_write);
-dump_dict();
-
-printf("%s:after dadd\n", __FUNCTION__);
+  dadd("W+", (address)&primitive, (address)&prim_w_plus);
+  dadd("B@", (address)&primitive, (address)&prim_b_read);
+  dadd("B!", (address)&primitive, (address)&prim_b_write);
+  dadd("W@", (address)&primitive, (address)&prim_w_read);
+  dadd("W!", (address)&primitive, (address)&prim_w_write);
+//dump_dict();
 
   enter("96 B+");
-printf("%s:after enter\n", __FUNCTION__);
   fail_unless(DS_TOP > DSTACK_START, "stack should not be empty at end");
-  fail_unless(97 == pop(), "parameter value 96 should have been pushed once");
+  fail_unless(97 == pop(), "parameter value 96 should have been incremented by one");
+  fail_unless(DS_TOP == DSTACK_START, "stack should be empty at end, too");
+
+  enter("96 W+");
+  fail_unless(DS_TOP > DSTACK_START, "stack should not be empty at end");
+  fail_unless(96 + WORDSIZE == pop(), "parameter value 96 should have been incremented by WORDSIZE");
   fail_unless(DS_TOP == DSTACK_START, "stack should be empty at end, too");
 }
 
@@ -552,27 +549,27 @@ int reset() {
 int main() {
   printf("running tests with WORDSIZE [%d]\n", WORDSIZE);
 
-//  test(data_stack);
-//  test(return_stack);
-//  test(dict_read_write);
-//  test(dict_move_to_next);
-//  test(dict_lookup);
-//  test(pool_read_write);
-//  test(pool_add);
-//  test(pool_lookup_not_found);
-//  test(pool_lookup_found_when_added);
-//  test(pool_lookup_found_by_length);
-//  test(pool_lookup_found_by_content);
-//  test(pool_ensure);
-//  test(not_a_number);
-//  test(positive_number);
-//  test(negative_number);
-//  test(eval_empty);
-//  test(eval_number);
-//  test(eval_two_numbers);
-//  test(eval_string);
-//  test(eval_word);
-//  test(eval_subroutine);
+  test(data_stack);
+  test(return_stack);
+  test(dict_read_write);
+  test(dict_move_to_next);
+  test(dict_lookup);
+  test(pool_read_write);
+  test(pool_add);
+  test(pool_lookup_not_found);
+  test(pool_lookup_found_when_added);
+  test(pool_lookup_found_by_length);
+  test(pool_lookup_found_by_content);
+  test(pool_ensure);
+  test(not_a_number);
+  test(positive_number);
+  test(negative_number);
+  test(eval_empty);
+  test(eval_number);
+  test(eval_two_numbers);
+  test(eval_string);
+  test(eval_word);
+  test(eval_subroutine);
   test(eval_prims);
 
   if (fails) {
