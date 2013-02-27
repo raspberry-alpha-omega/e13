@@ -192,7 +192,16 @@ void evaluate(address p, address next) {
   }
 }
 
-void evaluate_pent(address pent) {
+void defined(address pent) {
   address start = pent+PENT_DATA;
-  evaluate(start, start + word_read(pent));
+  word length = word_read(pent+PENT_LEN);
+  evaluate(start, start + length);
+}
+
+void primitive(address p) {
+  ((primfn)p)();
+}
+
+void literal(address p) {
+  push(p);
 }

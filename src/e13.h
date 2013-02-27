@@ -140,7 +140,6 @@ void execute(typefn fn, word value);
 
 // evaluate a sequence of words, either from input, or from the pool
 void evaluate(address p, word length);
-void evaluate_pent(address p);
 
 /* candidates for re-implementation as compiled words */
 
@@ -166,5 +165,10 @@ void byte_write(address p, byte v);
 word word_read(address p);
 void word_write(address p, word v);
 #endif
+
+// "type" functions for dict entries
+void primitive(address p);
+void literal(address p);
+void defined(address p);
 
 #endif

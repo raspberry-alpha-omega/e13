@@ -82,14 +82,6 @@ void _word_write(address p, word v, const char* f, int r) {
 #endif
 }
 
-void primitive(address p) {
-  ((primfn)p)();
-}
-
-void literal(address p) {
-  push(p);
-}
-
 void prim_b_plus() {
   push(pop() + (word)1);
 }
@@ -120,15 +112,17 @@ void dup(void) {
   push(x);
 }
 
-void dnext(void) {
-  address old_next = DICT_NEXT;
-  DICT_HEAD = old_next;
-
-  DICT_NEXT += DENT_SIZE;
+void blank_dict_next() {
   word_write(DICT_NEXT+DENT_NAME, 0);
   word_write(DICT_NEXT+DENT_TYPE, 0);
   word_write(DICT_NEXT+DENT_PARAM, 0);
-  word_write(DICT_NEXT+DENT_PREV, old_next);
+  word_write(DICT_NEXT+DENT_PREV, DICT_HEAD);
+}
+
+void dnext(void) {
+  DICT_HEAD = DICT_NEXT;
+  DICT_NEXT += DENT_SIZE;
+  blank_dict_next();
 }
 
 void type(const char* s) {
@@ -139,11 +133,11 @@ void type(const char* s) {
   byte_write(INBUF_IN, 0);
 }
 
-void dadd(const char* name, address typefn, word param) {
+void dadd(const char* name, void (*typefn)(address), word param) {
   type(name);
 //printf("dadd: INBUF_START=%x, INBUF_IN=%x, length=%d\n", INBUF_START, INBUF_IN, INBUF_IN-INBUF_START);
   word_write(DICT_NEXT+DENT_NAME, pens(INBUF_START, INBUF_IN-INBUF_START));
-  word_write(DICT_NEXT+DENT_TYPE, typefn);
+  word_write(DICT_NEXT+DENT_TYPE, (address)typefn);
   word_write(DICT_NEXT+DENT_PARAM, param);
   dnext();
 }
@@ -177,9 +171,11 @@ void init() {
 
   POOL_NEXT = POOL_START;
   POOL_HEAD = POOL_START;
+  padd(INBUF_START,0);
 
+  DICT_HEAD = 0;
   DICT_NEXT = DICT_START;
-  dadd("", (word)&number, 0);
+  blank_dict_next();
 
   RS_TOP = RSTACK_START;
 }
@@ -493,7 +489,7 @@ void define(const char* names, const char* bodys) {
   word body = pens(INBUF_START, INBUF_IN-INBUF_START);
 
   word_write(DICT_NEXT+DENT_NAME, name);
-  word_write(DICT_NEXT+DENT_TYPE, (word)&evaluate_pent);
+  word_write(DICT_NEXT+DENT_TYPE, (word)&defined);
   word_write(DICT_NEXT+DENT_PARAM, body);
   dnext();
 }
@@ -524,13 +520,15 @@ static void eval_prims() {
   START
   fail_unless(DS_TOP == DSTACK_START, "stack should be empty at start");
 
-  dadd("B+", (address)&primitive, (address)&prim_b_plus);
-  dadd("W+", (address)&primitive, (address)&prim_w_plus);
-  dadd("B@", (address)&primitive, (address)&prim_b_read);
-  dadd("B!", (address)&primitive, (address)&prim_b_write);
-  dadd("W@", (address)&primitive, (address)&prim_w_read);
-  dadd("W!", (address)&primitive, (address)&prim_w_write);
-//dump_dict();
+  dadd("B+", &primitive, (address)&prim_b_plus);
+  dadd("W+", &primitive, (address)&prim_w_plus);
+  dadd("B@", &primitive, (address)&prim_b_read);
+  dadd("B!", &primitive, (address)&prim_b_write);
+  dadd("@", &primitive, (address)&prim_w_read);
+  dadd("!", &primitive, (address)&prim_w_write);
+  dadd("dup", &primitive, (address)&dup);
+dump_pool();
+dump_dict();
 
   enter("96 B+");
   fail_unless(DS_TOP > DSTACK_START, "stack should not be empty at end");
