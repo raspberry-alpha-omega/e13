@@ -31,19 +31,22 @@ byte* memory_start = bytes;
 // memory access functions, with extra protection for tests
 uint8_t _byte_read(address p, const char* f, int r) {
   if (p < (word)bytes || p >= (word)(bytes + MEMORY_SIZE)) {
-    printf("attempt to read byte outside memory map[%lx-%lx] (p=%lx) fn=[%s] line=%d\n", bytes, bytes + MEMORY_SIZE, (word)p, f, r);
+    printf("attempt to read byte outside memory map[%08x-%08x] (p=%08x) fn=[%s] line=%d\n", bytes, bytes + MEMORY_SIZE, p, f, r);
+    complain("attempt to read byte outside memory map");
     return 0;
   }
   return *(byte*)p;
 }
 void _byte_write(address p, byte v, const char* f, int r) {
   if (p < (word)bytes || p >= (word)(bytes + MEMORY_SIZE)) {
+    printf("attempt to write byte outside memory map[%08x-%08x] (p=%08x) (v=%08x) fn=[%s] line=%d\n", bytes, bytes + MEMORY_SIZE, p, v, f, r);
     complain("attempt to write byte outside memory map");
   }
   *(byte*)p = v;
 }
 word _word_read(address p, const char* f, int r) {
   if (p < (word)bytes || p >= (word)(bytes + MEMORY_SIZE)) {
+    printf("attempt to read word outside memory map[%08x-%08x] (p=%08x) fn=[%s] line=%d\n", bytes, bytes + MEMORY_SIZE, p, f, r);
     complain("attempt to read word outside memory map");
     return 0;
   }
@@ -65,6 +68,7 @@ word _word_read(address p, const char* f, int r) {
 }
 void _word_write(address p, word v, const char* f, int r) {
   if (p < (word)bytes || p >= (word)(bytes + MEMORY_SIZE)) {
+    printf("attempt to write word outside memory map[%08x-%08x] (p=%08x) (v=%08x) fn=[%s] line=%d\n", bytes, bytes + MEMORY_SIZE, p, v, f, r);
     complain("attempt to write word outside memory map");
   }
 //printf("word_write(p=%d,v=%d)\n", p, v);
@@ -95,7 +99,9 @@ void prim_b_read() {
 }
 
 void prim_b_write() {
-  byte_write(pop(), pop());
+  address p = pop();
+  word v = pop();
+  byte_write(p, v);
 }
 
 void prim_w_read() {
@@ -103,7 +109,9 @@ void prim_w_read() {
 }
 
 void prim_w_write() {
-  word_write(pop(), pop());
+  address p = pop();
+  word v = pop();
+  word_write(p, v);
 }
 
 void dup(void) {
@@ -542,10 +550,8 @@ static void eval_prims() {
   dadd("DENT_PREV", &dict_offset, DENT_PREV);
 
   define("blank_dent", "0 DENT_NAME ! 0 DENT_TYPE ! 0 DENT_PARAM ! DICT_HEAD @ DENT_PREV !");
-  define("dnext", "DICT_NEXT @ DICT_HEAD ! DICT_NEXT @ W+ W+ W+ W+ DICT_NEXT ! blank_dent");
-  define("def", "DENT_NAME ! DENT_PARAM ! DEF_FN DENT_TYPE ! dnext");
-dump_pool();
-dump_dict();
+  define("dnext", "DICT_NEXT @ DICT_HEAD ! DICT_NEXT @ W+ W+ W+ W+ DICT_NEXT !");
+  define("def", "DENT_NAME ! DENT_PARAM ! DEF_FN DENT_TYPE ! dnext blank_dent");
 
   enter("96 B+");
   fail_unless(DS_TOP > DSTACK_START, "stack should not be empty at end");
@@ -555,6 +561,14 @@ dump_dict();
   enter("96 W+");
   fail_unless(DS_TOP > DSTACK_START, "stack should not be empty at end");
   fail_unless(96 + WORDSIZE == pop(), "parameter value 96 should have been incremented by WORDSIZE");
+  fail_unless(DS_TOP == DSTACK_START, "stack should be empty at end, too");
+
+  enter("[123 B+] [ugh] def");
+  fail_unless(DS_TOP == DSTACK_START, "stack should be empty after defining a new word");
+
+  enter("ugh");
+  fail_unless(DS_TOP > DSTACK_START, "stack should not be empty at end");
+  fail_unless(124 == pop(), "parameter value from definition should have been pushed");
   fail_unless(DS_TOP == DSTACK_START, "stack should be empty at end, too");
 }
 
