@@ -549,9 +549,10 @@ static void eval_prims() {
   dadd("DENT_PARAM", &dict_offset, DENT_PARAM);
   dadd("DENT_PREV", &dict_offset, DENT_PREV);
 
-  define("blank_dent", "0 DENT_NAME ! 0 DENT_TYPE ! 0 DENT_PARAM ! DICT_HEAD @ DENT_PREV !");
-  define("dnext", "DICT_NEXT @ DICT_HEAD ! DICT_NEXT @ W+ W+ W+ W+ DICT_NEXT !");
-  define("def", "DENT_NAME ! DENT_PARAM ! DEF_FN DENT_TYPE ! dnext blank_dent");
+  define("dent_set", "DEF_FN DENT_TYPE ! DENT_NAME ! DENT_PARAM !");
+  define("dent_next", "DICT_NEXT @ DICT_HEAD ! DICT_NEXT @ W+ W+ W+ W+ DICT_NEXT !");
+  define("dent_blank", "0 DENT_NAME ! 0 DENT_TYPE ! 0 DENT_PARAM ! DICT_HEAD @ DENT_PREV !");
+  define("def", "dent_set dent_next dent_blank");
 
   enter("96 B+");
   fail_unless(DS_TOP > DSTACK_START, "stack should not be empty at end");
