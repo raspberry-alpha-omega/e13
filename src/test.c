@@ -516,6 +516,10 @@ static void eval_subroutine() {
 }
 
 
+void dict_offset(word offset) {
+  push(DICT_NEXT + offset);
+}
+
 static void eval_prims() {
   START
   fail_unless(DS_TOP == DSTACK_START, "stack should be empty at start");
@@ -527,6 +531,19 @@ static void eval_prims() {
   dadd("@", &primitive, (address)&prim_w_read);
   dadd("!", &primitive, (address)&prim_w_write);
   dadd("dup", &primitive, (address)&dup);
+
+  dadd("DICT_HEAD", &literal, (word)&DICT_HEAD);
+  dadd("DICT_NEXT", &literal, (word)&DICT_NEXT);
+  dadd("DEF_FN", &literal, (word)&defined);
+
+  dadd("DENT_NAME", &dict_offset, DENT_NAME);
+  dadd("DENT_TYPE", &dict_offset, DENT_TYPE);
+  dadd("DENT_PARAM", &dict_offset, DENT_PARAM);
+  dadd("DENT_PREV", &dict_offset, DENT_PREV);
+
+  define("blank_dent", "0 DENT_NAME ! 0 DENT_TYPE ! 0 DENT_PARAM ! DICT_HEAD @ DENT_PREV !");
+  define("dnext", "DICT_NEXT @ DICT_HEAD ! DICT_NEXT @ W+ W+ W+ W+ DICT_NEXT ! blank_dent");
+  define("def", "DENT_NAME ! DENT_PARAM ! DEF_FN DENT_TYPE ! dnext");
 dump_pool();
 dump_dict();
 
