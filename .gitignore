@@ -3,3 +3,4 @@ obj/*.o
 e13.exe
 test.exe
 test.exe.stackdump
+.cproject
