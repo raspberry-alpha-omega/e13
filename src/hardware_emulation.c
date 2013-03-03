@@ -22,6 +22,16 @@ byte* memory_start = bytes;
 // memory-mapped devices, allowing dynamic plug/unplug
 struct device devices[N_DEVICES] = { 0 };
 
+const char* opname(enum device_operation op) {
+  switch(op) {
+  case READBYTE: return "READBYTE";
+  case WRITEBYTE: return "WRITEBYTE";
+  case READWORD: return "READWORD";
+  case WRITEWORD: return "WRITEWORD";
+  default: return "unknown";
+  }
+}
+
 void map_device(const char* name, address start, address end, devicefn fn) {
   for (int i = 0; i < N_DEVICES; ++i) {
     struct device* device = &devices[i];
@@ -143,12 +153,13 @@ void word_write(address p, word v) {
 }
 
 #define AUX_MU_IO_REG 0x20215004
+
 word uart_fn(enum device_operation op, address p, word v) {
   if (WRITEBYTE == op && AUX_MU_IO_REG == p) {
     char c = (char)v;
     putchar(c);
   } else {
-    printf("unsupported device access - op=%d, p=%08x, v=%08x", op, p, v);
+    printf("unsupported device access - %s(%08x,%08x)", opname(op), p, v);
   }
   return 0;
 }
