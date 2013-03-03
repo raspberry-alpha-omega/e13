@@ -178,7 +178,7 @@ struct device {
 extern struct device devices[];
 
 void map_device(address start, address end, devicefn fn);
-void hardware_init();
+void hardware_init(void);
 
 // "type" functions for dict entries
 void primitive(address p);
@@ -187,17 +187,19 @@ void defined(address p);
 void dict_offset(address p);
 
 
-void prim_b_plus();
-void prim_w_plus();
-void prim_b_read();
-void prim_b_write();
-void prim_w_read();
-void prim_w_write();
+void prim_b_plus(void);
+void prim_w_plus(void);
+void prim_b_read(void);
+void prim_b_write(void);
+void prim_w_read(void);
+void prim_w_write(void);
 void dict_offset(word offset);
 void dup(void);
-void dent_blank();
+void dent_blank(void);
 void dent_next(void);
 
-extern void init();
+extern void init_prims(void);
+extern void init_defs(void);
+extern void init(void);
 
 #endif

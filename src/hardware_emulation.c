@@ -65,7 +65,7 @@ void word_write(address p, word v) {
 #endif
 }
 
-void hardware_init() {
+void hardware_init(void) {
 
 }
 

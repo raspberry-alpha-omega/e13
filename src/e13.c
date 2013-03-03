@@ -253,6 +253,10 @@ void dup(void) {
   push(x);
 }
 
+void drop(void) {
+  pop();
+}
+
 void dent_blank() {
   word_write(DICT_NEXT+DENT_NAME, 0);
   word_write(DICT_NEXT+DENT_TYPE, 0);
@@ -324,6 +328,17 @@ void init() {
   DADD("DENT_PARAM", 10, &dict_offset, DENT_PARAM);
   DADD("DENT_PREV", 9, &dict_offset, DENT_PREV);
 
+  init_prims();
+  init_defs();
+
+}
+
+void init_prims(void) {
+  DADD("dup", 3, &primitive, &dup)
+  DADD("drop", 4, &primitive, &drop)
+}
+
+void init_defs(void) {
   DEF("dent_set", 8, "DEF_FN DENT_TYPE ! DENT_NAME ! DENT_PARAM !", 43);
   DEF("dent+", 5, "W+ W+ W+ W+", 11);
   DEF("dent_next", 9, "DICT_NEXT @ DICT_HEAD ! DICT_NEXT @ dent+ DICT_NEXT !", 53);
