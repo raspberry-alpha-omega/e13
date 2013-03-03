@@ -1,12 +1,16 @@
 CFLAGS= -std=c99
 
 all: clean test e13_generic
+	cp e13_generic e13
 
-test: src/test.c src/e13.c src/debug.c src/hardware_emulation.c
+pi: clean test e13_raspi
+	cp e13_raspi e13
+
+test: src/test.c src/e13.c src/debug.c src/hardware_emulation.c src/debug.c src/helper.c
 	gcc $(CFLAGS) -DTEST -m32 -o $@ $^
 	./test
 
-e13_generic: src/main.c src/e13.c src/hardware_emulation.c src/debug.c
+e13_generic: src/main.c src/e13.c src/hardware_emulation.c src/debug.c src/helper.c
 	gcc $(CFLAGS) -m32 -o $@ $^
 
 e13_raspi: src/start_raspi.s src/main.c src/e13.c src/mem_raspi.c

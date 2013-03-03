@@ -2,6 +2,8 @@
 
 #include "e13.h"
 #include "debug.h"
+#include "helper.h"
+
 int tracing = 0;
 
 static int fails = 0;
@@ -23,23 +25,6 @@ int _fail_if(const char* fn, int line, int expr, const char* message) {
 
 #define START //printf("%s:start\n", __FUNCTION__);
 #define END //printf("%s:end\n", __FUNCTION__);
-
-void type(const char* s) {
-  INBUF_IN = INBUF_START;
-  for (int i = 0; s[i] != 0; ++i) {
-    byte_write(INBUF_IN++, s[i]);
-  }
-  byte_write(INBUF_IN, 0);
-}
-
-void evaluate_INBUF(void) {
-  evaluate(INBUF_START, INBUF_IN);
-}
-
-void enter(const char* s) {
-  type(s);
-  evaluate_INBUF();
-}
 
 static void data_stack() {
   START

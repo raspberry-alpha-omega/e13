@@ -2,6 +2,7 @@
 
 #include "e13.h"
 #include "debug.h"
+#include "helper.h"
 
 #define CTRLC 0x03
 
@@ -9,8 +10,12 @@ int main(void) {
   char buf[16384];
   INBUF_IN = INBUF_START;
 
+  hardware_init();
   init();
 
+  enter("[539054084 B!] [cput] def");
+
+  INBUF_IN = INBUF_START;
   for (;;) {
     int c = getchar();
     if ('\n' == c) {

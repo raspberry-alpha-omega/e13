@@ -230,7 +230,7 @@ void prim_b_read() {
 void prim_b_write() {
   address p = pop();
   word v = pop();
-  byte_write(p, v);
+  byte_write(p, (byte)v);
 }
 
 void prim_w_read() {
@@ -318,6 +318,8 @@ void init() {
   DADD("@", 1, &primitive, &prim_w_read)
   DADD("!", 1, &primitive, &prim_w_write)
   DADD("W+", 2, &primitive, &prim_w_plus)
+  DADD("B@", 2, &primitive, &prim_b_read)
+  DADD("B!", 2, &primitive, &prim_b_write)
 
   DADD("DICT_HEAD", 9, &literal, &DICT_HEAD);
   DADD("DICT_NEXT", 9, &literal, &DICT_NEXT);
@@ -330,7 +332,6 @@ void init() {
 
   init_prims();
   init_defs();
-
 }
 
 void init_prims(void) {

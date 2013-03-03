@@ -166,18 +166,6 @@ word word_read(address p);
 void word_write(address p, word v);
 #endif
 
-enum device_operation { READBYTE, WRITEBYTE, READWORD, WRITEWORD };
-typedef word (*devicefn)(enum device_operation op, address p, word v);
-
-struct device {
-  int active;
-  address start;
-  address end;
-  devicefn fn;
-};
-extern struct device devices[];
-
-void map_device(address start, address end, devicefn fn);
 void hardware_init(void);
 
 // "type" functions for dict entries

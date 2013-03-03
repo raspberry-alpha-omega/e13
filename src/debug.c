@@ -31,7 +31,6 @@ void dump_sysvars() {
   printf(" inbuf_out=      %*x\n", WORDSIZE*2, INBUF_OUT);
 }
 
-
 void dump_stack(void) {
   printf("stack[ ");
   for (int i = DSTACK_START; i < DS_TOP; i += WORDSIZE) {
