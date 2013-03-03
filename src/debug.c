@@ -31,14 +31,6 @@ void dump_sysvars() {
   printf(" inbuf_out=      %*x\n", WORDSIZE*2, INBUF_OUT);
 }
 
-void dump_stack(void) {
-  printf("stack[ ");
-  for (int i = DSTACK_START; i < DS_TOP; i += WORDSIZE) {
-    printf("%08x ", word_read(i));
-  }
-  printf("]\n");
-}
-
 void dump_pent_s(address i, word length) {
   address data = i + PENT_DATA;
   for (int c = 0; c < length; ++c) {
@@ -110,3 +102,12 @@ void dump_dict() {
   printf("]\n");
 }
 
+void dump_stack(void) {
+  printf("stack[ ");
+  for (int i = DSTACK_START; i < DS_TOP; i += WORDSIZE) {
+    word v = word_read(i);
+    dump_pent_if(v);
+    putchar(' ');
+  }
+  printf("]\n");
+}
