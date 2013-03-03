@@ -1,6 +1,8 @@
-e13.exe.stackdump
-obj/*.o
-e13.exe
-test.exe
-test.exe.stackdump
+*.o
+*.exe
+*.stackdump
 .cproject
+e13
+e13_generic
+e13_raspi
+test
