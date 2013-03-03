@@ -14,6 +14,7 @@ int main(void) {
   init();
 
   enter("[539054084 B!] [cput] def");
+  enter("[[cput] eachc 10 cput] [print] def");
 
   INBUF_IN = INBUF_START;
   for (;;) {
