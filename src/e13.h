@@ -149,7 +149,7 @@ int number(address start, int length);
 // lookup a string in the pool and return its address or add it if not found
 address pens(address start, word length);
 
-#if TEST
+#if 0
 #define byte_read(p) _byte_read(p, __FUNCTION__, __LINE__)
 #define byte_write(p,v) _byte_write(p, v, __FUNCTION__, __LINE__)
 #define word_read(p) _word_read(p, __FUNCTION__, __LINE__)
@@ -166,10 +166,38 @@ word word_read(address p);
 void word_write(address p, word v);
 #endif
 
+enum device_operation { READBYTE, WRITEBYTE, READWORD, WRITEWORD };
+typedef word (*devicefn)(enum device_operation op, address p, word v);
+
+struct device {
+  int active;
+  address start;
+  address end;
+  devicefn fn;
+};
+extern struct device devices[];
+
+void map_device(address start, address end, devicefn fn);
+void hardware_init();
+
 // "type" functions for dict entries
 void primitive(address p);
 void literal(address p);
 void defined(address p);
 void dict_offset(address p);
+
+
+void prim_b_plus();
+void prim_w_plus();
+void prim_b_read();
+void prim_b_write();
+void prim_w_read();
+void prim_w_write();
+void dict_offset(word offset);
+void dup(void);
+void dent_blank();
+void dent_next(void);
+
+extern void init();
 
 #endif

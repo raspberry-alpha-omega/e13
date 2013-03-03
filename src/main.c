@@ -1,15 +1,27 @@
+#include <stdio.h>
+
 #include "e13.h"
+#include "debug.h"
+
+#define CTRLC 0x03
 
 int main(void) {
-//  type("23 skidoo .");
-//  input();
-//
-//  dadd("xx", exec_fn, (int)"23 skidoo .");
-//  type("13 xx");
-//  input();
-//
-//  dadd("skidoo", prints_fn, (int)"honey");
-//
-//  type("23 skidoo .");
-//  input();
+  char buf[16384];
+  INBUF_IN = INBUF_START;
+
+  init();
+
+  for (;;) {
+    int c = getchar();
+    if ('\n' == c) {
+      evaluate(INBUF_START, INBUF_IN);
+      INBUF_IN = INBUF_START;
+      dump_stack();
+    } else if (c < ' ') {
+      break;
+    } else {
+      byte_write(INBUF_IN++, c);
+      byte_write(INBUF_IN, 0);
+    }
+  }
 }

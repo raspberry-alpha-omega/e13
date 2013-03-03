@@ -24,193 +24,12 @@ int _fail_if(const char* fn, int line, int expr, const char* message) {
 #define START //printf("%s:start\n", __FUNCTION__);
 #define END //printf("%s:end\n", __FUNCTION__);
 
-// the memory model, simulating basic RAM so that I can get as close to Chuck's original design as possible.
-byte bytes[MEMORY_SIZE];
-
-byte* memory_start = bytes;
-
-// memory access functions, with extra protection for tests
-uint8_t _byte_read(address p, const char* f, int r) {
-  if (p < (word)bytes || p >= (word)(bytes + MEMORY_SIZE)) {
-    printf("attempt to read byte outside memory map[%08x-%08x] (p=%08x) fn=[%s] line=%d\n", bytes, bytes + MEMORY_SIZE, p, f, r);
-    complain("attempt to read byte outside memory map");
-    return 0;
-  }
-  return *(byte*)p;
-}
-void _byte_write(address p, byte v, const char* f, int r) {
-  if (p < (word)bytes || p >= (word)(bytes + MEMORY_SIZE)) {
-    printf("attempt to write byte outside memory map[%08x-%08x] (p=%08x) (v=%08x) fn=[%s] line=%d\n", bytes, bytes + MEMORY_SIZE, p, v, f, r);
-    complain("attempt to write byte outside memory map");
-    return;
-  }
-  *(byte*)p = v;
-}
-word _word_read(address p, const char* f, int r) {
-  if (p < (word)bytes || p >= (word)(bytes + MEMORY_SIZE)) {
-    printf("attempt to read word outside memory map[%08x-%08x] (p=%08x) fn=[%s] line=%d\n", bytes, bytes + MEMORY_SIZE, p, f, r);
-    complain("attempt to read word outside memory map");
-    return 0;
-  }
-  word ret = 0;
-  ret += ((word)byte_read(p+0));
-  ret += ((word)byte_read(p+1))<<8;
-#if WORDSIZE > 2
-  ret += ((word)byte_read(p+2))<<16;
-  ret += ((word)byte_read(p+3))<<24;
-#if WORDSIZE > 4
-  ret += ((word)byte_read(p+4))<<32;
-  ret += ((word)byte_read(p+5))<<40;
-  ret += ((word)byte_read(p+6))<<48;
-  ret += ((word)byte_read(p+7))<<56;
-#endif
-#endif
-//printf("word_read(p=%d)=>%d\n", p, ret);
-  return ret;
-}
-void _word_write(address p, word v, const char* f, int r) {
-  if (p < (word)bytes || p >= (word)(bytes + MEMORY_SIZE)) {
-    printf("attempt to write word outside memory map[%08x-%08x] (p=%08x) (v=%08x) fn=[%s] line=%d\n", bytes, bytes + MEMORY_SIZE, p, v, f, r);
-    complain("attempt to write word outside memory map");
-    return;
-  }
-//printf("word_write(p=%d,v=%d)\n", p, v);
-  byte_write(p+0, (v & 0x00FF));
-  byte_write(p+1, (v & 0xFF00) >> 8);
-#if WORDSIZE > 2
-  byte_write(p+2, (v & 0x00FF0000) >> 16);
-  byte_write(p+3, (v & 0xFF000000) >> 24);
-#if WORDSIZE > 4
-  byte_write(p+4, (v & 0x000000FF00000000) >> 32);
-  byte_write(p+5, (v & 0x0000FF0000000000) >> 40);
-  byte_write(p+6, (v & 0x00FF000000000000) >> 48);
-  byte_write(p+7, (v & 0xFF00000000000000) >> 56);
-#endif
-#endif
-}
-
-void prim_b_plus() {
-  push(pop() + (word)1);
-}
-
-void prim_w_plus() {
-  push(pop() + WORDSIZE);
-}
-
-void prim_b_read() {
-  push(byte_read(pop()));
-}
-
-void prim_b_write() {
-  address p = pop();
-  word v = pop();
-  byte_write(p, v);
-}
-
-void prim_w_read() {
-  push(word_read(pop()));
-}
-
-void prim_w_write() {
-  address p = pop();
-  word v = pop();
-  word_write(p, v);
-}
-
-void dict_offset(word offset) {
-  push(DICT_NEXT + offset);
-}
-
-void dup(void) {
-  word x = pop();
-  push(x);
-  push(x);
-}
-
-void dent_blank() {
-  word_write(DICT_NEXT+DENT_NAME, 0);
-  word_write(DICT_NEXT+DENT_TYPE, 0);
-  word_write(DICT_NEXT+DENT_PARAM, 0);
-  word_write(DICT_NEXT+DENT_PREV, DICT_HEAD);
-}
-
-void dent_next(void) {
-  DICT_HEAD = DICT_NEXT;
-  DICT_NEXT += DENT_SIZE;
-  dent_blank();
-}
-
 void type(const char* s) {
   INBUF_IN = INBUF_START;
   for (int i = 0; s[i] != 0; ++i) {
     byte_write(INBUF_IN++, s[i]);
   }
   byte_write(INBUF_IN, 0);
-}
-
-#define DADD(name, nlen, type, param) \
-  word_write(DICT_NEXT+DENT_NAME, padd((address)name, nlen)); \
-  word_write(DICT_NEXT+DENT_TYPE, (address)type); \
-  word_write(DICT_NEXT+DENT_PARAM, (word)param); \
-  dent_next(); \
-
-#define DEF(name, nlen, body, blen) \
-  DADD(name, nlen, &defined, padd((address)body, blen))
-
-// set up default entries and initialise variables
-void init() {
-  // set "constants"
-  INBUF_START = (address)(memory_start + sizeof(struct sys_const) + sizeof(struct sys_var));
-  INBUF_END = INBUF_START + INBUF_BYTES;
-
-  DSTACK_START = INBUF_END;
-  DSTACK_END = DSTACK_START + DSTACK_WORDS * WORDSIZE;
-
-  RSTACK_START = DSTACK_END;
-  RSTACK_END = RSTACK_START + RSTACK_WORDS * WORDSIZE;
-
-  DICT_START = RSTACK_END;
-  DICT_END = DICT_START + DICT_WORDS * WORDSIZE;
-
-  SCRATCH_START = DICT_END;
-  SCRATCH_END = SCRATCH_START + SCRATCH_BYTES;
-
-  POOL_START = SCRATCH_END;
-  POOL_END = POOL_START + POOL_BYTES;
-
-  // set "variables"
-  INBUF_IN = INBUF_START;
-  INBUF_OUT = INBUF_START;
-
-  DS_TOP = DSTACK_START;
-  RS_TOP = RSTACK_START;
-
-  POOL_NEXT = POOL_START;
-  POOL_HEAD = POOL_START;
-  padd(INBUF_START,0);
-
-  DICT_HEAD = 0;
-  DICT_NEXT = DICT_START;
-  dent_blank();
-
-  DADD("@", 1, &primitive, &prim_w_read)
-  DADD("!", 1, &primitive, &prim_w_write)
-  DADD("W+", 2, &primitive, &prim_w_plus)
-
-  DADD("DICT_HEAD", 9, &literal, &DICT_HEAD);
-  DADD("DICT_NEXT", 9, &literal, &DICT_NEXT);
-  DADD("DEF_FN", 6, &literal, &defined);
-
-  DADD("DENT_NAME", 9, &dict_offset, DENT_NAME);
-  DADD("DENT_TYPE", 9, &dict_offset, DENT_TYPE);
-  DADD("DENT_PARAM", 10, &dict_offset, DENT_PARAM);
-  DADD("DENT_PREV", 9, &dict_offset, DENT_PREV);
-
-  DEF("dent_set", 8, "DEF_FN DENT_TYPE ! DENT_NAME ! DENT_PARAM !", 43);
-  DEF("dent+", 5, "W+ W+ W+ W+", 11);
-  DEF("dent_next", 9, "DICT_NEXT @ DICT_HEAD ! DICT_NEXT @ dent+ DICT_NEXT !", 53);
-  DEF("dent_blank", 10, "DICT_HEAD @ DENT_PREV ! 0 DENT_NAME ! 0 DENT_TYPE ! 0 DENT_PARAM !", 66);
-  DEF("def", 3, "dent_set dent_next dent_blank", 29);
 }
 
 void evaluate_INBUF(void) {
@@ -475,6 +294,17 @@ static void eval_two_numbers() {
   END
 }
 
+static void eval_two_numbers_with_trailing_space() {
+  START
+  fail_unless(DS_TOP == DSTACK_START, "stack should be empty at start");
+  enter("23 97 ");
+  fail_unless(DS_TOP > DSTACK_START, "stack should not be empty at end");
+  fail_unless(97 == pop(), "parameter value 97 should have been pushed");
+  fail_unless(23 == pop(), "parameter value 23 should have been pushed");
+  fail_unless(DS_TOP == DSTACK_START, "stack should be empty at end, too");
+  END
+}
+
 static void eval_string() {
   START
   fail_unless(DS_TOP == DSTACK_START, "stack should be empty at start");
@@ -600,6 +430,7 @@ int main() {
   test(eval_empty);
   test(eval_number);
   test(eval_two_numbers);
+  test(eval_two_numbers_with_trailing_space);
   test(eval_string);
   test(eval_word);
   test(eval_subroutine);

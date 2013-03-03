@@ -173,6 +173,7 @@ void evaluate(address p, address next) {
       if (' ' == c) {
         eval_word(start,i-start);
         state = OUTSIDE;
+        start = i;
       } else {
         ++end;
       }
@@ -212,4 +213,120 @@ void primitive(address p) {
 
 void literal(address p) {
   push(p);
+}
+
+void prim_b_plus() {
+  push(pop() + (word)1);
+}
+
+void prim_w_plus() {
+  push(pop() + WORDSIZE);
+}
+
+void prim_b_read() {
+  push(byte_read(pop()));
+}
+
+void prim_b_write() {
+  address p = pop();
+  word v = pop();
+  byte_write(p, v);
+}
+
+void prim_w_read() {
+  push(word_read(pop()));
+}
+
+void prim_w_write() {
+  address p = pop();
+  word v = pop();
+  word_write(p, v);
+}
+
+void dict_offset(word offset) {
+  push(DICT_NEXT + offset);
+}
+
+void dup(void) {
+  word x = pop();
+  push(x);
+  push(x);
+}
+
+void dent_blank() {
+  word_write(DICT_NEXT+DENT_NAME, 0);
+  word_write(DICT_NEXT+DENT_TYPE, 0);
+  word_write(DICT_NEXT+DENT_PARAM, 0);
+  word_write(DICT_NEXT+DENT_PREV, DICT_HEAD);
+}
+
+void dent_next(void) {
+  DICT_HEAD = DICT_NEXT;
+  DICT_NEXT += DENT_SIZE;
+  dent_blank();
+}
+
+#define DADD(name, nlen, type, param) \
+  word_write(DICT_NEXT+DENT_NAME, padd((address)name, nlen)); \
+  word_write(DICT_NEXT+DENT_TYPE, (address)type); \
+  word_write(DICT_NEXT+DENT_PARAM, (word)param); \
+  dent_next(); \
+
+#define DEF(name, nlen, body, blen) \
+  DADD(name, nlen, &defined, padd((address)body, blen))
+
+// set up default entries and initialise variables
+void init() {
+  // set "constants"
+  INBUF_START = (address)(memory_start + sizeof(struct sys_const) + sizeof(struct sys_var));
+  INBUF_END = INBUF_START + INBUF_BYTES;
+
+  DSTACK_START = INBUF_END;
+  DSTACK_END = DSTACK_START + DSTACK_WORDS * WORDSIZE;
+
+  RSTACK_START = DSTACK_END;
+  RSTACK_END = RSTACK_START + RSTACK_WORDS * WORDSIZE;
+
+  DICT_START = RSTACK_END;
+  DICT_END = DICT_START + DICT_WORDS * WORDSIZE;
+
+  SCRATCH_START = DICT_END;
+  SCRATCH_END = SCRATCH_START + SCRATCH_BYTES;
+
+  POOL_START = SCRATCH_END;
+  POOL_END = POOL_START + POOL_BYTES;
+
+  // set "variables"
+  INBUF_IN = INBUF_START;
+  INBUF_OUT = INBUF_START;
+
+  DS_TOP = DSTACK_START;
+  RS_TOP = RSTACK_START;
+
+  POOL_NEXT = POOL_START;
+  POOL_HEAD = POOL_START;
+  padd(INBUF_START,0);
+
+  DICT_HEAD = 0;
+  DICT_NEXT = DICT_START;
+  dent_blank();
+
+  DADD("@", 1, &primitive, &prim_w_read)
+  DADD("!", 1, &primitive, &prim_w_write)
+  DADD("W+", 2, &primitive, &prim_w_plus)
+
+  DADD("DICT_HEAD", 9, &literal, &DICT_HEAD);
+  DADD("DICT_NEXT", 9, &literal, &DICT_NEXT);
+  DADD("DEF_FN", 6, &literal, &defined);
+
+  DADD("DENT_NAME", 9, &dict_offset, DENT_NAME);
+  DADD("DENT_TYPE", 9, &dict_offset, DENT_TYPE);
+  DADD("DENT_PARAM", 10, &dict_offset, DENT_PARAM);
+  DADD("DENT_PREV", 9, &dict_offset, DENT_PREV);
+
+  DEF("dent_set", 8, "DEF_FN DENT_TYPE ! DENT_NAME ! DENT_PARAM !", 43);
+  DEF("dent+", 5, "W+ W+ W+ W+", 11);
+  DEF("dent_next", 9, "DICT_NEXT @ DICT_HEAD ! DICT_NEXT @ dent+ DICT_NEXT !", 53);
+  DEF("dent_blank", 10, "DICT_HEAD @ DENT_PREV ! 0 DENT_NAME ! 0 DENT_TYPE ! 0 DENT_PARAM !", 66);
+  DEF("def", 3, "dent_set dent_next dent_blank", 29);
 }
