@@ -72,7 +72,7 @@ void dump_pool(void) {
 char namebuf[128];
 const char* typename(address type) {
   void* p = (void*)type;
-  if (p == defined) return "def";
+  if (p == definition) return "def";
   if (p == primitive) return "prim";
   if (p == literal) return "lit";
   if (p == dict_offset) return "dict";

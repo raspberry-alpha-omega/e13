@@ -171,7 +171,7 @@ void hardware_init(void);
 // "type" functions for dict entries
 void primitive(address p);
 void literal(address p);
-void defined(address p);
+void definition(address p);
 void dict_offset(address p);
 
 

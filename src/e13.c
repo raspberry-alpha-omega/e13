@@ -5,7 +5,7 @@
 #include <stdio.h>
 #endif
 
-// statck functions
+// stack functions
 void push(word v) {
   word_write(DS_TOP, v);
   DS_TOP += WORDSIZE;
@@ -203,7 +203,7 @@ void evaluate(address p, address next) {
   }
 }
 
-void defined(address pent) {
+void definition(address pent) {
   address start = pent+PENT_DATA;
   word length = word_read(pent+PENT_LEN);
   evaluate(start, start + length);
@@ -265,7 +265,7 @@ void prim_each_c(void) {
   int len = word_read(string + PENT_LEN);
   for (int i = 0; i < len; ++i) {
     push(byte_read(string+PENT_DATA+i));
-    defined(code);
+    definition(code);
   }
 }
 
@@ -289,12 +289,12 @@ void dent_next(void) {
   dent_next(); \
 
 #define DEF(name, nlen, body, blen) \
-  DADD(name, nlen, &defined, padd((address)body, blen))
+  DADD(name, nlen, &definition, padd((address)body, blen))
 
 void init_vars(void) {
   DADD("DICT_HEAD", 9, &literal, &DICT_HEAD);
   DADD("DICT_NEXT", 9, &literal, &DICT_NEXT);
-  DADD("DEF_FN", 6, &literal, &defined);
+  DADD("DEF_FN", 6, &literal, &definition);
 
   DADD("DENT_NAME", 9, &dict_offset, DENT_NAME);
   DADD("DENT_TYPE", 9, &dict_offset, DENT_TYPE);

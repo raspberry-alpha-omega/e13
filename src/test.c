@@ -337,7 +337,7 @@ void define(const char* names, const char* bodys) {
   word name = pens(INBUF_START, INBUF_IN-INBUF_START);
 
   word_write(DICT_NEXT+DENT_NAME, name);
-  word_write(DICT_NEXT+DENT_TYPE, (word)&defined);
+  word_write(DICT_NEXT+DENT_TYPE, (word)&definition);
   word_write(DICT_NEXT+DENT_PARAM, body);
   dent_next();
 }
