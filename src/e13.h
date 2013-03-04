@@ -182,7 +182,7 @@ void prim_b_write(void);
 void prim_w_read(void);
 void prim_w_write(void);
 void dict_offset(word offset);
-void dup(void);
+void prim_dup(void);
 void dent_blank(void);
 void dent_next(void);
 

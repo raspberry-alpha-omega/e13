@@ -249,17 +249,17 @@ void dict_offset(word offset) {
   push(DICT_NEXT + offset);
 }
 
-void dup(void) {
+void prim_dup(void) {
   word x = pop();
   push(x);
   push(x);
 }
 
-void drop(void) {
+void prim_drop(void) {
   pop();
 }
 
-void each_c(void) {
+void prim_each_c(void) {
   address code = pop();
   address string = pop();
   int len = word_read(string + PENT_LEN);
@@ -308,10 +308,9 @@ void init_prims(void) {
   DADD("W+", 2, &primitive, &prim_w_plus)
   DADD("B@", 2, &primitive, &prim_b_read)
   DADD("B!", 2, &primitive, &prim_b_write)
-  DADD("dup", 3, &primitive, &dup)
-  DADD("drop", 4, &primitive, &drop)
-
-  DADD("eachc", 5, &primitive, &each_c);
+  DADD("dup", 3, &primitive, &prim_dup)
+  DADD("drop", 4, &primitive, &prim_drop)
+  DADD("eachc", 5, &primitive, &prim_each_c);
 }
 
 void init_defs(void) {

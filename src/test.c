@@ -319,7 +319,7 @@ static void eval_word() {
   address name = padd(INBUF_START, INBUF_IN-INBUF_START);
   word_write(DICT_NEXT+DENT_NAME, name);
   word_write(DICT_NEXT+DENT_TYPE, (word)&primitive);
-  word_write(DICT_NEXT+DENT_PARAM, (word)&dup);
+  word_write(DICT_NEXT+DENT_PARAM, (word)&prim_dup);
   dent_next();
 
   enter("96 hello");
