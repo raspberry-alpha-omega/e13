@@ -3,16 +3,45 @@ To do list for E13
 
 Sooner
 ------
-
++ convert inbuf to look like a pent
++ move vars to dict
++ hex number input
++ init uart before reading/writing
++ get a char from uart
++ read value from timer
++ loop (while)
++ loop (until)
++ if / ifelse
++ improve get char to wait for available
++ improve put char to wait for ready
++ write to OK LED
++ sleep for specified time
++ flash a sequence on LED
++ read commands from UART on boot
++ words to dump dict, pool etc.
 
 Later
 -----
-
++ creation of arbitrary data in pent
++ lookup data from key (char)
++ build a morse flasher
++ read from mailbox
++ write to mailbox
++ get board revision
++ setup GPIO pins
++ read/write GPIO pins
++ read/write 12c
++ read/write spi
 
 Maybe
 -----
-
++ variable length dent
++ USB HID driver
++ USB Comms driver
++ support both uart and USB in/out
++ read commands from file on boot
 
 Done
 ----
-+ set up a to-do file
++ set up a to-do file :)
++ add a readme
