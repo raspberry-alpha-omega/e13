@@ -6,14 +6,14 @@ all: clean test e13_generic
 pi: clean test e13_raspi
 	cp e13_raspi e13
 
-test: src/test.c src/e13.c src/debug.c src/hardware_emulation.c src/debug.c src/helper.c
+test: src/test.c src/e13.c src/prims.c src/corn.c src/debug.c src/hardware_emulation.c src/debug.c src/helper.c
 	gcc $(CFLAGS) -DTEST -m32 -o $@ $^
 	./test
 
-e13_generic: src/main.c src/e13.c src/hardware_emulation.c src/debug.c src/helper.c
+e13_generic: src/main.c src/e13.c src/prims.c src/corn.c src/hardware_emulation.c src/debug.c src/helper.c
 	gcc $(CFLAGS) -m32 -o $@ $^
 
-e13_raspi: src/start_raspi.s src/main.c src/e13.c src/mem_raspi.c
+e13_raspi: src/start_raspi.s src/e13.c src/corn.c src/mem_raspi.c
 	gcc $(CFLAGS) -m32 -static -nostdlib -ffreestanding -o $@ $^
 
 clean:

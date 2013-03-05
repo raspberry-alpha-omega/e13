@@ -1,8 +1,12 @@
 #include <stdio.h>
 
-#include "e13.h"
 #include "debug.h"
 #include "helper.h"
+
+#include "e13.h"
+#include "hardware.h"
+#include "prims.h"
+#include "corn.h"
 
 #define CTRLC 0x03
 
@@ -11,7 +15,7 @@ int main(void) {
   INBUF_IN = INBUF_START;
 
   hardware_init();
-  init();
+  corn_init();
 
   enter("[539054084 B!] [cput] def");
   enter("[[cput] eachc] [print] def");

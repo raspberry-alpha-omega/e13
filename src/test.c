@@ -1,8 +1,12 @@
 #include <stdio.h>
 
-#include "e13.h"
 #include "debug.h"
 #include "helper.h"
+
+#include "e13.h"
+#include "hardware.h"
+#include "prims.h"
+#include "corn.h"
 
 int tracing = 0;
 
@@ -388,7 +392,8 @@ static void eval_def() {
 
 int reset() {
   //  printf("*"); fflush(stdout);
-  init();
+  hardware_init();
+  corn_init();
   return 1;
 }
 

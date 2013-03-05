@@ -1,6 +1,7 @@
 #include <stdio.h>
 
 #include "e13.h"
+#include "hardware.h"
 
 #define N_DEVICES 32
 

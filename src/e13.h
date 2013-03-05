@@ -135,6 +135,9 @@ address plup(address start, word length);
 // lookup a symbol in the dictionary and return its address or NOT_FOUND if not found
 address dlup(address symbol);
 
+void dent_blank(void);
+void dent_next(void);
+
 // execute a dictionary entry
 void execute(typefn fn, word value);
 
@@ -149,45 +152,15 @@ int number(address start, int length);
 // lookup a string in the pool and return its address or add it if not found
 address pens(address start, word length);
 
-#if 0
-#define byte_read(p) _byte_read(p, __FUNCTION__, __LINE__)
-#define byte_write(p,v) _byte_write(p, v, __FUNCTION__, __LINE__)
-#define word_read(p) _word_read(p, __FUNCTION__, __LINE__)
-#define word_write(p,v) _word_write(p, v, __FUNCTION__, __LINE__)
-
-byte _byte_read(address p, const char* f, int r);
-void _byte_write(address p, byte v, const char* f, int r);
-word _word_read(address p, const char* f, int r);
-void _word_write(address p, word v, const char* f, int r);
-#else
 byte byte_read(address p);
 void byte_write(address p, byte v);
 word word_read(address p);
 void word_write(address p, word v);
-#endif
-
-void hardware_init(void);
 
 // "type" functions for dict entries
 void primitive(address p);
 void literal(address p);
 void definition(address p);
 void dict_offset(address p);
-
-
-void prim_b_plus(void);
-void prim_w_plus(void);
-void prim_b_read(void);
-void prim_b_write(void);
-void prim_w_read(void);
-void prim_w_write(void);
-void dict_offset(word offset);
-void prim_dup(void);
-void dent_blank(void);
-void dent_next(void);
-
-extern void init_prims(void);
-extern void init_defs(void);
-extern void init(void);
 
 #endif
