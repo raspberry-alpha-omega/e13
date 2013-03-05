@@ -3,7 +3,7 @@ To do list for E13
 
 Sooner
 ------
-+ convert inbuf to look like a pent
++ convert inbuf to look like a pent (maybe put it _in_ a pent?)
 + move vars to dict
 + hex number input
 + init uart before reading/writing
@@ -22,6 +22,7 @@ Sooner
 
 Later
 -----
++ split "rom" and "ram"
 + creation of arbitrary data in pent
 + lookup data from key (char)
 + build a morse flasher
