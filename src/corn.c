@@ -42,7 +42,6 @@ void init_defs(void) {
 
 void reset_working_data() {
   INBUF_IN = INBUF_START;
-  INBUF_OUT = INBUF_START;
   DS_TOP = DSTACK_START;
   RS_TOP = RSTACK_START;
 }

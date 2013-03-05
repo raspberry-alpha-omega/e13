@@ -32,7 +32,6 @@ int main(void) {
       break;
     } else {
       byte_write(INBUF_IN++, c);
-      byte_write(INBUF_IN, 0);
     }
   }
 }

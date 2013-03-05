@@ -5,8 +5,6 @@
 
 void dump_sysconsts() {
   printf("system consts:\n");
-  printf(" inbuf_start=    %*x\n", WORDSIZE*2, INBUF_START);
-  printf(" inbuf_end=      %*x\n", WORDSIZE*2, INBUF_END);
   printf(" dstack_start=   %*x\n", WORDSIZE*2, DSTACK_START);
   printf(" dstack_end=     %*x\n", WORDSIZE*2, DSTACK_END);
   printf(" rstack_start=   %*x\n", WORDSIZE*2, RSTACK_START);
@@ -17,6 +15,8 @@ void dump_sysconsts() {
   printf(" scratch_end=    %*x\n", WORDSIZE*2, SCRATCH_END);
   printf(" pool_start=     %*x\n", WORDSIZE*2, POOL_START);
   printf(" pool_end=       %*x\n", WORDSIZE*2, POOL_END);
+  printf(" inbuf_start=    %*x\n", WORDSIZE*2, INBUF_START);
+  printf(" inbuf_end=      %*x\n", WORDSIZE*2, INBUF_END);
 }
 
 void dump_sysvars() {
@@ -28,7 +28,6 @@ void dump_sysvars() {
   printf(" pool_head=      %*x\n", WORDSIZE*2, POOL_HEAD);
   printf(" pool_next=      %*x\n", WORDSIZE*2, POOL_NEXT);
   printf(" inbuf_in=       %*x\n", WORDSIZE*2, INBUF_IN);
-  printf(" inbuf_out=      %*x\n", WORDSIZE*2, INBUF_OUT);
 }
 
 void dump_pent_s(address i, word length) {

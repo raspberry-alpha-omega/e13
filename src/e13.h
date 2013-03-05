@@ -77,7 +77,6 @@ struct sys_var {
 #define POOL_HEAD sys_var(pool_head)
 #define POOL_NEXT sys_var(pool_next)
 #define INBUF_IN sys_var(inbuf_in)
-#define INBUF_OUT sys_var(inbuf_out)
 
 
 // memory model sizes, adjusting these should be safe, just keep them all on WORDSIZE-byte boundaries
