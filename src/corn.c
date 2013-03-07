@@ -1,24 +1,29 @@
 #include "e13.h"
 #include "prims.h"
 
-#define DADD(name, nlen, type, param) \
-  word_write(DICT_NEXT+DENT_NAME, padd((address)name, nlen)); \
-  word_write(DICT_NEXT+DENT_TYPE, (address)type); \
-  word_write(DICT_NEXT+DENT_PARAM, (word)param); \
-  dent_next(); \
+#define DADD(name, nlen, type, param) {\
+  address symbol = padd((address)name, nlen); \
+  word_write(HEAP_NEXT+PENT_LEN, DENT_SIZE); \
+  word_write(HEAP_NEXT+PENT_PREV, DICT_HEAD); \
+  word_write(HEAP_NEXT+DENT_NAME, symbol); \
+  word_write(HEAP_NEXT+DENT_TYPE, (address)type); \
+  word_write(HEAP_NEXT+DENT_PARAM, (word)param); \
+  DICT_HEAD = HEAP_NEXT; \
+  HEAP_NEXT += DENT_SIZE; }
 
-#define DEF(name, nlen, body, blen) \
-  DADD(name, nlen, &definition, padd((address)body, blen))
+#define DEF(name, nlen, body, blen) {\
+  address p = padd((address)body, blen); \
+  DADD(name, nlen, &definition, p); }
 
 void init_vars(void) {
   DADD("DICT_HEAD", 9, &literal, &DICT_HEAD);
-  DADD("DICT_NEXT", 9, &literal, &DICT_NEXT);
+  DADD("HEAP_NEXT", 9, &literal, &HEAP_NEXT);
   DADD("DEF_FN", 6, &literal, &definition);
 
   DADD("DENT_NAME", 9, &dict_offset, DENT_NAME);
   DADD("DENT_TYPE", 9, &dict_offset, DENT_TYPE);
   DADD("DENT_PARAM", 10, &dict_offset, DENT_PARAM);
-  DADD("DENT_PREV", 9, &dict_offset, DENT_PREV);
+  DADD("PENT_PREV", 9, &dict_offset, PENT_PREV);
 }
 
 void init_prims(void) {
@@ -34,9 +39,9 @@ void init_prims(void) {
 
 void init_defs(void) {
   DEF("dent_set", 8, "DEF_FN DENT_TYPE ! DENT_NAME ! DENT_PARAM !", 43);
-  DEF("dent+", 5, "W+ W+ W+ W+", 11);
-  DEF("dent_next", 9, "DICT_NEXT @ DICT_HEAD ! DICT_NEXT @ dent+ DICT_NEXT !", 53);
-  DEF("dent_blank", 10, "DICT_HEAD @ DENT_PREV ! 0 DENT_NAME ! 0 DENT_TYPE ! 0 DENT_PARAM !", 66);
+  DEF("dent+", 5, "W+ W+ W+ W+ W+", 11);
+  DEF("dent_next", 9, "HEAP_NEXT @ DICT_HEAD ! HEAP_NEXT @ dent+ DICT_NEXT !", 53);
+  DEF("dent_blank", 10, "HEAP_NEXT @ PENT_PREV ! 0 DENT_NAME ! 0 DENT_TYPE ! 0 DENT_PARAM !", 66);
   DEF("def", 3, "dent_set dent_next dent_blank", 29);
 }
 
@@ -58,10 +63,7 @@ void corn_init() {
   RSTACK_START = DSTACK_END;
   RSTACK_END = RSTACK_START + RSTACK_WORDS * WORDSIZE;
 
-  DICT_START = RSTACK_END;
-  DICT_END = DICT_START + DICT_WORDS * WORDSIZE;
-
-  SCRATCH_START = DICT_END;
+  SCRATCH_START = RSTACK_END;
   SCRATCH_END = SCRATCH_START + SCRATCH_BYTES;
 
   POOL_START = SCRATCH_END;
@@ -69,13 +71,12 @@ void corn_init() {
 
   // set "variables"
 
-  POOL_NEXT = POOL_START;
-  POOL_HEAD = POOL_START;
-  padd(INBUF_START,0);
-
+  HEAP_NEXT = POOL_START;
+  POOL_HEAD = 0;
   DICT_HEAD = 0;
-  DICT_NEXT = DICT_START;
-  dent_blank();
+
+  // Add dummy entry to heap
+  padd(INBUF_START,0);
 
   reset_working_data();
 

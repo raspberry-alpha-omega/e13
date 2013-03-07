@@ -24,12 +24,13 @@ address rpop(void) {
 }
 
 address dlup(address symbol) {
-  address head = DICT_HEAD;
-  while (head != 0) {
-    if (word_read(head+DENT_NAME) == symbol) {
-          return head;
+  address p = DICT_HEAD;
+  while (p != 0) {
+    if (word_read(p+DENT_NAME) == symbol) {
+      return p;
+    } else {
     }
-    head = word_read(head+DENT_PREV);
+    p = word_read(p+PENT_PREV);
   }
   return NOT_FOUND;
 }
@@ -43,46 +44,41 @@ word roundup(address p) {
 }
 
 address padd(address start, word len) {
-//printf("badd start POOL_HEAD=%d POOL_NEXT=%d\n", POOL_HEAD, POOL_NEXT);
-  address here = POOL_NEXT;
+  word_write(HEAP_NEXT + PENT_LEN, len);
+  word_write(HEAP_NEXT + PENT_PREV, POOL_HEAD);
+
   for (int i = 0; i < len; ++i) {
-//    uint8_t c = byte_read(start + i);
     uint8_t c = ((byte*)start)[i];
     if (0 == c) break;
-    byte_write(here+PENT_DATA + i, c);
-//printf("badd [%s] loop len=%d\n", real_address(start), len);
+    byte_write(HEAP_NEXT+PENT_DATA + i, c);
   }
-  word next = here + PENT_DATA + roundup(len);
 
-  word_write(here + PENT_LEN, len);
-  word_write(here + PENT_NEXT, next);
+  POOL_HEAD = HEAP_NEXT;
+  HEAP_NEXT += roundup(PENT_DATA + len);
 
-  POOL_HEAD = here;
-  POOL_NEXT = next;
-//printf("badd end POOL_HEAD=%d POOL_NEXT=%d\n", POOL_HEAD, POOL_NEXT);
-//dump_pent(POOL_HEAD);
-  return here;
+  return POOL_HEAD;
 }
 
 address plup(address start, word length) {
-  address p = POOL_START;
-  while (p < POOL_NEXT) {
-    word len = word_read(p);
-    address data = p + PENT_DATA;
+  address p = POOL_HEAD;
+  while (p != 0) {
+    word len = word_read(p+PENT_LEN);
     if (len == length) {
+      address data = p + PENT_DATA;
       int i;
       for (i = 0; i < length; ++i) {
         byte requested = byte_read(start+i);
         byte found = byte_read(data+i);
-        if (requested != found) break;
+        if (requested != found) {
+          break;
+        }
       }
       if (i == length) {
-              return p;
+        return p;
       }
     }
-    p = word_read(p + PENT_NEXT);
+    p = word_read(p + PENT_PREV);
   }
-
   return NOT_FOUND;
 }
 
@@ -218,18 +214,10 @@ void literal(address p) {
 }
 
 void dict_offset(word offset) {
-  push(DICT_NEXT + offset);
-}
-
-void dent_blank() {
-  word_write(DICT_NEXT+DENT_NAME, 0);
-  word_write(DICT_NEXT+DENT_TYPE, 0);
-  word_write(DICT_NEXT+DENT_PARAM, 0);
-  word_write(DICT_NEXT+DENT_PREV, DICT_HEAD);
+  push(HEAP_NEXT + offset);
 }
 
 void dent_next(void) {
-  DICT_HEAD = DICT_NEXT;
-  DICT_NEXT += DENT_SIZE;
-  dent_blank();
+  DICT_HEAD = HEAP_NEXT;
+  HEAP_NEXT += DENT_SIZE;
 }

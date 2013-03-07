@@ -9,8 +9,6 @@ void dump_sysconsts() {
   printf(" dstack_end=     %*x\n", WORDSIZE*2, DSTACK_END);
   printf(" rstack_start=   %*x\n", WORDSIZE*2, RSTACK_START);
   printf(" rstack_end=     %*x\n", WORDSIZE*2, RSTACK_END);
-  printf(" dict_start=     %*x\n", WORDSIZE*2, DICT_START);
-  printf(" dict_end=       %*x\n", WORDSIZE*2, DICT_END);
   printf(" scratch_start=  %*x\n", WORDSIZE*2, SCRATCH_START);
   printf(" scratch_end=    %*x\n", WORDSIZE*2, SCRATCH_END);
   printf(" pool_start=     %*x\n", WORDSIZE*2, POOL_START);
@@ -24,9 +22,9 @@ void dump_sysvars() {
   printf(" ds_top=         %*x\n", WORDSIZE*2, DS_TOP);
   printf(" rs_top=         %*x\n", WORDSIZE*2, RS_TOP);
   printf(" dict_head=      %*x\n", WORDSIZE*2, DICT_HEAD);
-  printf(" dict_next=      %*x\n", WORDSIZE*2, DICT_NEXT);
+  printf(" dict_next=      %*x\n", WORDSIZE*2, HEAP_NEXT);
   printf(" pool_head=      %*x\n", WORDSIZE*2, POOL_HEAD);
-  printf(" pool_next=      %*x\n", WORDSIZE*2, POOL_NEXT);
+  printf(" pool_next=      %*x\n", WORDSIZE*2, HEAP_NEXT);
   printf(" inbuf_in=       %*x\n", WORDSIZE*2, INBUF_IN);
 }
 
@@ -42,12 +40,12 @@ address dump_pent(address i) {
   printf(" %08x: %d[", i, length);
   dump_pent_s(i, length);
   printf("]\n");
-  return word_read(i + PENT_NEXT);
+  return word_read(i + PENT_PREV);
 }
 
 void dump_pent_if(address a) {
-  address p = POOL_START;
-  while (p < POOL_NEXT) {
+  address p = POOL_HEAD;
+  while (p != 0) {
     if (p == a) {
       word len = word_read(p + PENT_LEN);
       putchar('[');
@@ -55,14 +53,14 @@ void dump_pent_if(address a) {
       putchar(']');
       return;
     }
-    p = word_read(p + PENT_NEXT);
+    p = word_read(p + PENT_PREV);
   }
   printf("%08x", a);
 }
 
 void dump_pool(void) {
-  printf("pool (START=%08x,HEAD=%08x,NEXT=%08x,END=%08x) [\n", POOL_START, POOL_HEAD, POOL_NEXT, POOL_END);
-  for (int i = POOL_START; i != POOL_NEXT; ) {
+  printf("pool (HEAD=%08x,NEXT=%08x) [\n", POOL_HEAD, HEAP_NEXT);
+  for (int i = POOL_HEAD; i != 0; ) {
     i = dump_pent(i);
   }
   printf("]\n");
@@ -80,22 +78,23 @@ const char* typename(address type) {
 }
 
 address dump_dent(address i) {
-  address prev = word_read(i+DENT_PREV);
+  address len = word_read(i+PENT_LEN);
+  address prev = word_read(i+PENT_PREV);
   address name = word_read(i+DENT_NAME);
   address type = word_read(i+DENT_TYPE);
   word param = word_read(i+DENT_PARAM);
 
-  printf(" %08x: ", i);
+  printf(" %08x: name[", i);
   dump_pent_if(name);
-  printf(" = %s(", typename(type));
+  printf("] = %s(", typename(type));
   dump_pent_if(param);
-  printf(") -> %08x\n", prev);
+  printf(") len=%d -> %08x\n", len, prev);
   return prev;
 }
 
 void dump_dict() {
-  printf("dict (START=%08x,HEAD=%08x,NEXT=%08x,END=%08x) [\n", DICT_START, DICT_HEAD, DICT_NEXT, DICT_END);
-  for (int i = DICT_HEAD; i >= DICT_START; ) {
+  printf("dict (HEAD=%08x,NEXT=%08x) [\n", DICT_HEAD, HEAP_NEXT);
+  for (int i = DICT_HEAD; i != 0; ) {
     i = dump_dent(i);
   }
   printf("]\n");

@@ -51,8 +51,6 @@ struct sys_const {
 #define DSTACK_END sys_const(dstack_end)
 #define RSTACK_START sys_const(rstack_start)
 #define RSTACK_END sys_const(rstack_end)
-#define DICT_START sys_const(dict_start)
-#define DICT_END sys_const(dict_end)
 #define SCRATCH_START sys_const(scratch_start)
 #define SCRATCH_END sys_const(scratch_end)
 #define POOL_START sys_const(pool_start)
@@ -61,23 +59,19 @@ struct sys_const {
 struct sys_var {
   address ds_top;
   address rs_top;
+  address heap_next;
   address dict_head;
-  address dict_next;
   address pool_head;
-  address pool_next;
   address inbuf_in;
-  address inbuf_out;
 };
 
 #define sys_var(name) ((struct sys_var*)(memory_start + sizeof(struct sys_const)))->name
 #define DS_TOP sys_var(ds_top)
 #define RS_TOP sys_var(rs_top)
+#define HEAP_NEXT sys_var(heap_next)
 #define DICT_HEAD sys_var(dict_head)
-#define DICT_NEXT sys_var(dict_next)
 #define POOL_HEAD sys_var(pool_head)
-#define POOL_NEXT sys_var(pool_next)
 #define INBUF_IN sys_var(inbuf_in)
-
 
 // memory model sizes, adjusting these should be safe, just keep them all on WORDSIZE-byte boundaries
 #define MEMORY_SIZE 65536
@@ -93,15 +87,16 @@ struct sys_var {
 extern byte* memory_start;
 
 // field offsets
-#define DENT_NAME 0
-#define DENT_TYPE (1 * WORDSIZE)
-#define DENT_PARAM (2 * WORDSIZE)
-#define DENT_PREV (3 * WORDSIZE)
-#define DENT_SIZE (4 * WORDSIZE)
+#define PENT_LEN (0 * WORDSIZE)
+#define PENT_PREV (1 * WORDSIZE)
 
-#define PENT_LEN 0
-#define PENT_NEXT (1 * WORDSIZE)
 #define PENT_DATA (2 * WORDSIZE)
+
+#define DENT_NAME (2 * WORDSIZE)
+#define DENT_TYPE (3 * WORDSIZE)
+#define DENT_PARAM (4 * WORDSIZE)
+
+#define DENT_SIZE (5 * WORDSIZE)
 
 // synbolic constants
 #define OUTSIDE 0
