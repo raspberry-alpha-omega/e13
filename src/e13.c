@@ -26,9 +26,9 @@ address rpop(void) {
 address dlup(address symbol) {
   address p = DICT_HEAD;
   while (p != 0) {
-    if (word_read(p+DENT_NAME) == symbol) {
+    word found = word_read(p+DENT_NAME);
+    if (found == symbol) {
       return p;
-    } else {
     }
     p = word_read(p+PENT_PREV);
   }
@@ -50,7 +50,7 @@ address padd(address start, word len) {
   for (int i = 0; i < len; ++i) {
     uint8_t c = ((byte*)start)[i];
     if (0 == c) break;
-    byte_write(HEAP_NEXT+PENT_DATA + i, c);
+      byte_write(HEAP_NEXT+PENT_DATA + i, c);
   }
 
   POOL_HEAD = HEAP_NEXT;

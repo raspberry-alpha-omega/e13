@@ -58,48 +58,23 @@ static void dict_read_write() {
   END
 }
 
-static void dict_move_to_next() {
-  START
-  dict_read_write();
-  word_write(HEAP_NEXT+DENT_TYPE, 456);
-  fail_unless(word_read(HEAP_NEXT+DENT_TYPE) == 456, "dict[next] type should change when written");
-  word_write(HEAP_NEXT+DENT_PARAM, 789);
-  fail_unless(word_read(HEAP_NEXT+DENT_PARAM) == 789, "dict[next] type should change when written");
-
-  address old_head = DICT_HEAD;
-  address old_next = HEAP_NEXT;
-
-  dent_next();
-
-  fail_unless(DICT_HEAD == old_next, "dict head should now be what was DICT_NEXT");
-  fail_unless(word_read(DICT_HEAD+PENT_LEN) == DENT_SIZE, "dict[head] length should be right");
-  fail_unless(word_read(DICT_HEAD+PENT_PREV) == old_head, "dict[head] prev should point back to old head");
-  fail_unless(word_read(DICT_HEAD+DENT_NAME) == 123, "dict[head] name should be as defined");
-  fail_unless(word_read(DICT_HEAD+DENT_TYPE) == 456, "dict[head] type should be as defined");
-  fail_unless(word_read(DICT_HEAD+DENT_PARAM) == 789, "dict[head] param should be as defined");
-  fail_unless(HEAP_NEXT > DICT_HEAD, "dict next should still be more than head");
-
-  fail_unless(word_read(HEAP_NEXT+PENT_LEN) == 0, "dict[next] len should be 0");
-  fail_unless(word_read(HEAP_NEXT+PENT_PREV) == DICT_HEAD, "new dict[next] prev should point back to new head");
-  fail_unless(word_read(HEAP_NEXT+DENT_NAME) == 0, "new dict[next] name should be 0");
-  fail_unless(word_read(HEAP_NEXT+DENT_TYPE) == 0, "new dict[next] type fn should be 0");
-  fail_unless(word_read(HEAP_NEXT+DENT_PARAM) == 0, "new dict[next] param should be 0");
-  END
-}
 
 static void dict_lookup() {
   START
   fail_unless(dlup(123) == NOT_FOUND, "dict lookup should not find undefined item");
   word_write(HEAP_NEXT+DENT_NAME, 123);
+  word_write(HEAP_NEXT+PENT_PREV, DICT_HEAD);
   dent_next();
   fail_unless(dlup(123) == DICT_HEAD, "dict lookup should find item at head");
 
   address first_match = DICT_HEAD;
   word_write(HEAP_NEXT+DENT_NAME, 456);
+  word_write(HEAP_NEXT+PENT_PREV, DICT_HEAD);
   dent_next();
   fail_unless(dlup(123) == first_match, "dict lookup should find item behind head");
 
   word_write(HEAP_NEXT+DENT_NAME, 123);
+  word_write(HEAP_NEXT+PENT_PREV, DICT_HEAD);
   dent_next();
   fail_unless(dlup(123) != first_match, "dict lookup should find override");
   END
@@ -405,7 +380,6 @@ int main() {
   test(data_stack);
   test(return_stack);
   test(dict_read_write);
-  test(dict_move_to_next);
   test(dict_lookup);
   test(pool_read_write);
   test(pool_add);
@@ -425,7 +399,7 @@ int main() {
   test(eval_word);
   test(eval_subroutine);
   test(eval_prim_w_plus);
-//  test(eval_def);
+  test(eval_def);
 
   if (fails) {
     printf("%d tests failed\n", fails);

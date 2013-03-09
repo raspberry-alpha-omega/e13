@@ -39,10 +39,9 @@ void init_prims(void) {
 
 void init_defs(void) {
   DEF("dent_set", 8, "DEF_FN DENT_TYPE ! DENT_NAME ! DENT_PARAM !", 43);
-  DEF("dent+", 5, "W+ W+ W+ W+ W+", 11);
-  DEF("dent_next", 9, "HEAP_NEXT @ DICT_HEAD ! HEAP_NEXT @ dent+ DICT_NEXT !", 53);
-  DEF("dent_blank", 10, "HEAP_NEXT @ PENT_PREV ! 0 DENT_NAME ! 0 DENT_TYPE ! 0 DENT_PARAM !", 66);
-  DEF("def", 3, "dent_set dent_next dent_blank", 29);
+  DEF("dent+", 5, "W+ W+ W+ W+ W+", 14);
+  DEF("dent_next", 9, "DICT_HEAD @ PENT_PREV ! HEAP_NEXT @ DICT_HEAD ! HEAP_NEXT @ dent+ HEAP_NEXT !", 77);
+  DEF("def", 3, "dent_set dent_next", 18);
 }
 
 void reset_working_data() {
